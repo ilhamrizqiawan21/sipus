@@ -1,41 +1,27 @@
 @extends('layouts.app')
 
 @section('content')
-  <div class="page-stack">
-    <section class="page-header">
+  <div class="d-flex flex-column gap-3">
+    <section class="d-flex flex-wrap align-items-center justify-content-between gap-3">
       <div>
-        <div class="breadcrumb"><a href="{{ route('copies.index') }}">Eksamplar</a> / Tambah</div>
-        <h1>Tambah Eksamplar</h1>
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item"><a href="{{ route('copies.index') }}">Eksemplar</a></li>
+            <li class="breadcrumb-item active">Tambah</li>
+          </ol>
+        </nav>
+        <h1 class="h3 mb-1">Tambah Eksemplar</h1>
       </div>
-      <a class="btn btn-secondary" href="{{ route('copies.index') }}">Batal</a>
+      <a class="btn btn-outline-secondary" href="{{ route('copies.index') }}">Batal</a>
     </section>
 
-    <section class="panel">
-      <form method="post" action="{{ route('copies.store') }}">
-        @csrf
-        <div class="form-grid">
-          <label>Buku
-            <select name="book_id" required>
-              <option value="">-- pilih buku --</option>
-              @foreach($books as $b)
-                <option value="{{ $b->id }}">{{ $b->title }}</option>
-              @endforeach
-            </select>
-          </label>
-          <label>Barcode
-            <input type="text" name="barcode" required>
-          </label>
-          <label>Lokasi
-            <input type="text" name="location">
-          </label>
-          <label>Status
-            <input type="text" name="status" value="available">
-          </label>
-        </div>
-        <div class="form-actions">
-          <button class="btn btn-primary" type="submit">Simpan</button>
-        </div>
-      </form>
+    <section class="card shadow-sm">
+      <div class="card-body">
+        <form method="post" action="{{ route('copies.store') }}">
+          @csrf
+          @include('copies._form')
+        </form>
+      </div>
     </section>
   </div>
 @endsection

@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>{{ config('app.name', 'SIPUS') }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     @if (class_exists('Illuminate\Support\Facades\Vite'))
       @vite(['resources/css/app.css','resources/js/app.js'])
     @else
@@ -11,7 +12,7 @@
       <script src="/resources/js/app.js" defer></script>
     @endif
   </head>
-  <body>
+  <body class="bg-body-tertiary">
     <div class="app-shell">
       <div class="app-body">
         <aside class="app-sidebar" id="sidebar">
@@ -35,11 +36,11 @@
               <span class="nav-icon">B</span>
               <span>Katalog Buku</span>
             </a>
-            <a class="nav-link {{ request()->routeIs('inventory.*') ? 'active' : '' }}" href="{{ route('inventory.index') }}">
+            <a class="nav-link {{ request()->routeIs('inventory.index') || request()->routeIs('copies.*') ? 'active' : '' }}" href="{{ route('inventory.index') }}">
               <span class="nav-icon">E</span>
               <span>Eksemplar</span>
             </a>
-            <a class="nav-link {{ request()->routeIs('inventory.procurement') ? 'active' : '' }}" href="{{ route('inventory.procurement') }}">
+            <a class="nav-link {{ request()->routeIs('procurements.*') ? 'active' : '' }}" href="{{ route('procurements.index') }}">
               <span class="nav-icon">P</span>
               <span>Pengadaan</span>
             </a>
@@ -49,7 +50,7 @@
               <span class="nav-icon">A</span>
               <span>Anggota</span>
             </a>
-            <a class="nav-link {{ request()->routeIs('loans.index') ? 'active' : '' }}" href="{{ route('loans.index') }}">
+            <a class="nav-link {{ request()->routeIs('loans.index') || request()->routeIs('loans.borrow') || request()->routeIs('loans.show') ? 'active' : '' }}" href="{{ route('loans.index') }}">
               <span class="nav-icon">S</span>
               <span>Peminjaman</span>
               <span class="nav-badge">3</span>
@@ -60,11 +61,11 @@
             </a>
 
             <div class="nav-section">Sistem</div>
-            <a class="nav-link {{ request()->routeIs('reports.index') ? 'active' : '' }}" href="{{ route('reports.index') }}">
+            <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}">
               <span class="nav-icon">L</span>
               <span>Laporan</span>
             </a>
-            <a class="nav-link {{ request()->routeIs('settings.index') ? 'active' : '' }}" href="{{ route('settings.index') }}">
+            <a class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}" href="{{ route('settings.index') }}">
               <span class="nav-icon">G</span>
               <span>Pengaturan</span>
             </a>
@@ -93,5 +94,6 @@
         </main>
       </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   </body>
 </html>

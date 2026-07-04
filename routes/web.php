@@ -24,11 +24,16 @@ Route::delete('/books/{id}', [BookController::class, 'destroy'])->name('books.de
 
 // Members
 Route::get('/members', [MemberController::class, 'index'])->name('members.index');
+Route::get('/members/create', [MemberController::class, 'create'])->name('members.create');
+Route::post('/members', [MemberController::class, 'store'])->name('members.store');
+Route::get('/members/{id}/edit', [MemberController::class, 'edit'])->name('members.edit');
 Route::get('/members/{id}', [MemberController::class, 'show'])->name('members.show');
+Route::match(['put','patch'], '/members/{id}', [MemberController::class, 'update'])->name('members.update');
+Route::delete('/members/{id}', [MemberController::class, 'destroy'])->name('members.destroy');
 
 // Inventory
 Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
-Route::get('/inventory/procurement', [InventoryController::class, 'procurement'])->name('inventory.procurement');
+Route::redirect('/inventory/procurement', '/procurements')->name('inventory.procurement');
 // Procurements
 Route::get('/procurements', [App\Http\Controllers\ProcurementController::class, 'index'])->name('procurements.index');
 Route::get('/procurements/create', [App\Http\Controllers\ProcurementController::class, 'create'])->name('procurements.create');
@@ -47,13 +52,22 @@ Route::delete('/copies/{id}', [App\Http\Controllers\BookCopyController::class, '
 // Loans
 Route::get('/loans', [LoanController::class, 'index'])->name('loans.index');
 Route::get('/loans/borrow', [LoanController::class, 'borrow'])->name('loans.borrow');
+Route::post('/loans', [LoanController::class, 'store'])->name('loans.store');
 Route::get('/loans/return', [LoanController::class, 'return'])->name('loans.return');
+Route::post('/loans/{id}/return', [LoanController::class, 'processReturn'])->name('loans.processReturn');
+Route::get('/loans/{id}', [LoanController::class, 'show'])->name('loans.show');
 
 // Reports
 Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+Route::get('/reports/circulation', [ReportController::class, 'circulation'])->name('reports.circulation');
+Route::get('/reports/overdue', [ReportController::class, 'overdue'])->name('reports.overdue');
+Route::get('/reports/collection', [ReportController::class, 'collection'])->name('reports.collection');
+Route::get('/reports/fines', [ReportController::class, 'fines'])->name('reports.fines');
 
 // Settings
 Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+Route::get('/settings/edit', [SettingController::class, 'edit'])->name('settings.edit');
+Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
 
 // Auth (web)
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');

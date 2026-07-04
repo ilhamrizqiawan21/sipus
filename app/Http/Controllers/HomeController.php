@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
+use App\Models\BorrowingTransaction;
 use App\Models\Member;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -20,22 +21,8 @@ class HomeController extends Controller
         $overdueLoans = 0;
         $inventoryCount = 0;
         $latestTransactions = [];
-        $categoryStats = [
-            ['label' => 'Agama', 'value' => 312, 'color' => '#145048'],
-            ['label' => 'IPA', 'value' => 248, 'color' => '#2a8a76'],
-            ['label' => 'IPS', 'value' => 195, 'color' => '#bf7c33'],
-            ['label' => 'Bahasa', 'value' => 167, 'color' => '#5ba89a'],
-            ['label' => 'Umum', 'value' => 143, 'color' => '#e8a44a'],
-        ];
-        $borrowingTrend = [
-            ['month' => 'Jan 2026', 'total' => 120],
-            ['month' => 'Feb 2026', 'total' => 145],
-            ['month' => 'Mar 2026', 'total' => 162],
-            ['month' => 'Apr 2026', 'total' => 138],
-            ['month' => 'Mei 2026', 'total' => 175],
-            ['month' => 'Jun 2026', 'total' => 190],
-            ['month' => 'Jul 2026', 'total' => 84],
-        ];
+        $categoryStats = [];
+        $borrowingTrend = [];
         $processSteps = [
             ['title' => 'Inventaris Koleksi', 'description' => 'Perbarui data buku, eksemplar, dan status rak secara berkala.'],
             ['title' => 'Catat Peminjaman', 'description' => 'Rekam transaksi peminjaman beserta detail anggota dan jadwal pengembalian.'],
@@ -47,26 +34,34 @@ class HomeController extends Controller
             $bookCount = Book::count();
             $memberCount = Member::count();
 
-            if (DB::getSchemaBuilder()->hasTable('borrowing_items')) {
-                $activeLoans = DB::table('borrowing_items')->where('status', 'borrowed')->count();
-                $overdueLoans = DB::table('borrowing_items')
-                    ->where('status', 'borrowed')
+            if (DB::getSchemaBuilder()->hasTable('borrowing_transactions')) {
+                $activeLoans = DB::table('borrowing_transactions')
+                    ->whereIn('status', ['borrowed', 'partially_returned', 'overdue'])
+                    ->count();
+
+                $overdueLoans = DB::table('borrowing_transactions')
+                    ->whereIn('status', ['borrowed', 'partially_returned', 'overdue'])
                     ->whereDate('due_date', '<', $today->toDateString())
                     ->count();
 
-                $latestTransactions = DB::table('borrowing_items')
-                    ->select('transaction_code', 'member_name', 'book_title', 'borrow_date', 'due_date', 'status')
-                    ->orderByDesc('borrow_date')
+                $latestTransactions = BorrowingTransaction::with('borrowingItems')
+                    ->orderByDesc('created_at')
                     ->limit(5)
                     ->get()
-                    ->map(function ($row) {
+                    ->map(function ($transaction) {
+                        $bookTitles = $transaction->borrowingItems
+                            ->pluck('book_title_snapshot')
+                            ->filter()
+                            ->unique()
+                            ->values();
+
                         return [
-                            'code' => $row->transaction_code ?? 'TRX-0000',
-                            'member' => $row->member_name ?? 'Anggota',
-                            'book' => $row->book_title ?? 'Judul Buku',
-                            'borrowedAt' => $row->borrow_date ? Carbon::parse($row->borrow_date)->translatedFormat('d M Y') : '-',
-                            'dueAt' => $row->due_date ? Carbon::parse($row->due_date)->translatedFormat('d M Y') : '-',
-                            'status' => ucfirst($row->status ?? 'Dipinjam'),
+                            'code' => $transaction->transaction_code,
+                            'member' => $transaction->member_name_snapshot,
+                            'book' => $bookTitles->isNotEmpty() ? $bookTitles->implode(', ') : '-',
+                            'borrowedAt' => $transaction->borrow_date ? Carbon::parse($transaction->borrow_date)->translatedFormat('d M Y') : '-',
+                            'dueAt' => $transaction->due_date ? Carbon::parse($transaction->due_date)->translatedFormat('d M Y') : '-',
+                            'status' => $this->formatTransactionStatus($transaction->status),
                         ];
                     })
                     ->toArray();
@@ -79,12 +74,10 @@ class HomeController extends Controller
                     ->limit(7)
                     ->get();
 
-                if ($trendRows->isNotEmpty()) {
-                    $borrowingTrend = $trendRows->map(fn($row) => [
-                        'month' => $row->month_label,
-                        'total' => $row->total,
-                    ])->toArray();
-                }
+                $borrowingTrend = $trendRows->map(fn($row) => [
+                    'month' => $row->month_label,
+                    'total' => $row->total,
+                ])->toArray();
             }
 
             if (DB::getSchemaBuilder()->hasTable('books') && DB::getSchemaBuilder()->hasTable('categories')) {
@@ -109,15 +102,7 @@ class HomeController extends Controller
                 $inventoryCount = DB::table('book_copies')->count();
             }
         } catch (\Throwable $exception) {
-            // Jika tabel belum ada atau koneksi tidak tersedia, gunakan nilai fallback.
-        }
-
-        if (empty($latestTransactions)) {
-            $latestTransactions = [
-                ['code' => 'BRW-20260702-0018', 'member' => 'Ahmad Fauzi', 'book' => 'Tafsir Al-Muyassar', 'borrowedAt' => '02 Jul 2026', 'dueAt' => '09 Jul 2026', 'status' => 'Dipinjam'],
-                ['code' => 'BRW-20260702-0017', 'member' => 'Siti Nurhaliza', 'book' => 'IPA Terpadu Kelas 7', 'borrowedAt' => '02 Jul 2026', 'dueAt' => '09 Jul 2026', 'status' => 'Dipinjam'],
-                ['code' => 'BRW-20260701-0016', 'member' => 'Budi Santoso', 'book' => 'Bahasa Indonesia Kelas 9', 'borrowedAt' => '01 Jul 2026', 'dueAt' => '08 Jul 2026', 'status' => 'Terlambat'],
-            ];
+            // Jika tabel belum ada atau koneksi tidak tersedia, tampilkan data kosong dari controller.
         }
 
         return view('home', compact(
@@ -132,5 +117,16 @@ class HomeController extends Controller
             'borrowingTrend',
             'processSteps'
         ));
+    }
+
+    private function formatTransactionStatus(?string $status): string
+    {
+        return match ($status) {
+            'borrowed' => 'Dipinjam',
+            'partially_returned' => 'Dikembalikan Sebagian',
+            'returned' => 'Dikembalikan',
+            'overdue' => 'Terlambat',
+            default => '-',
+        };
     }
 }

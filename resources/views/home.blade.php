@@ -63,17 +63,21 @@
           <h2>Tren Peminjaman</h2>
           <span>Per bulan</span>
         </div>
-        <div class="bar-chart" aria-label="Grafik tren peminjaman">
-          @foreach ($borrowingTrend as $trend)
+        @if (count($borrowingTrend) > 0)
+          <div class="bar-chart" aria-label="Grafik tren peminjaman">
+            @foreach ($borrowingTrend as $trend)
             <div class="bar-group">
               <span class="bar primary" style="height: {{ max(28, $trend['total'] / 2) }}px"></span>
               <span class="bar-label">{{ $trend['month'] }}</span>
             </div>
-          @endforeach
-        </div>
-        <div class="chart-legend">
-          <span><i class="legend primary"></i> Jumlah peminjaman</span>
-        </div>
+            @endforeach
+          </div>
+          <div class="chart-legend">
+            <span><i class="legend primary"></i> Jumlah peminjaman</span>
+          </div>
+        @else
+          <div class="empty-state">Belum ada data peminjaman.</div>
+        @endif
       </div>
 
       <div class="panel">
@@ -81,12 +85,14 @@
           <h2>Koleksi per Kategori</h2>
         </div>
         <div class="category-list">
-          @foreach ($categoryStats as $category)
+          @forelse ($categoryStats as $category)
             <div class="category-row">
               <span><i style="background: {{ $category['color'] }}"></i>{{ $category['label'] }}</span>
               <strong>{{ number_format($category['value'], 0, ',', '.') }}</strong>
             </div>
-          @endforeach
+          @empty
+            <div class="empty-state">Belum ada data kategori.</div>
+          @endforelse
         </div>
       </div>
     </section>
@@ -99,7 +105,7 @@
         <a href="{{ route('loans.borrow') }}">Catat Peminjaman</a>
         <a href="{{ route('loans.return') }}">Catat Pengembalian</a>
         <a href="{{ route('inventory.index') }}">Inventaris Eksemplar</a>
-        <a href="{{ route('inventory.procurement') }}">Pengadaan Buku</a>
+        <a href="{{ route('procurements.index') }}">Pengadaan Buku</a>
         <a href="{{ route('reports.index') }}">Cetak Laporan</a>
       </div>
     </section>
@@ -122,7 +128,7 @@
             </tr>
           </thead>
           <tbody>
-            @foreach ($latestTransactions as $transaction)
+            @forelse ($latestTransactions as $transaction)
               <tr>
                 <td class="mono">{{ $transaction['code'] }}</td>
                 <td><strong>{{ $transaction['member'] }}</strong><small>{{ $transaction['book'] }}</small></td>
@@ -131,7 +137,11 @@
                 <td>{{ $transaction['dueAt'] }}</td>
                 <td><span class="status {{ $transaction['status'] === 'Terlambat' ? 'danger' : 'info' }}">{{ $transaction['status'] }}</span></td>
               </tr>
-            @endforeach
+            @empty
+              <tr>
+                <td colspan="6" class="text-center text-muted">Belum ada transaksi.</td>
+              </tr>
+            @endforelse
           </tbody>
         </table>
       </div>

@@ -9,13 +9,13 @@ Aplikasi ini berfungsi sebagai sistem manajemen perpustakaan sekolah dengan fitu
 - Katalog buku untuk melihat daftar buku dan detail buku.
 - Manajemen anggota perpustakaan.
 - Autentikasi pengguna dengan login dan registrasi.
-- Integrasi tampilan responsif menggunakan Vite dan Tailwind CSS.
+- Integrasi tampilan responsif menggunakan Bootstrap dan Vite.
 
 ## Spesifikasi Teknis
 
 - Bahasa utama: PHP
 - Framework backend: Laravel 13.x
-- Frontend: Blade, CSS kustom, Vite
+- Frontend: Blade, Bootstrap, CSS kustom ringan, Vite
 - Pengelola paket: Composer, npm
 - Database: MySQL / SQLite / database yang didukung Laravel
 - Versi PHP yang dibutuhkan: `^8.3`
@@ -25,7 +25,7 @@ Aplikasi ini berfungsi sebagai sistem manajemen perpustakaan sekolah dengan fitu
 - PHP 8.3
 - Laravel 13.x
 - Blade templating
-- Tailwind CSS via `@tailwindcss/vite`
+- Bootstrap 5
 - Vite 8.x
 - JavaScript modern (ESM)
 - HTML5, CSS3
@@ -46,13 +46,13 @@ Menu utama aplikasi tersedia di sidebar dan mencakup:
 
 - Dashboard
 - Katalog Buku
-- Eksemplar (placeholder / disabled)
-- Pengadaan (placeholder / disabled)
+- Eksemplar
+- Pengadaan
 - Anggota
-- Peminjaman (placeholder / disabled)
-- Pengembalian (placeholder / disabled)
-- Laporan (placeholder / disabled)
-- Pengaturan (placeholder / disabled)
+- Peminjaman
+- Pengembalian
+- Laporan
+- Pengaturan
 
 Selain sidebar, ada juga:
 - Input pencarian global di topbar
