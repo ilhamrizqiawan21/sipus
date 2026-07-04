@@ -7,11 +7,13 @@ use App\Models\Book;
 use App\Models\BookCondition;
 use App\Models\BookCopyStatus;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class BookCopyController extends Controller
 {
     public function index(Request $request)
     {
+        $this->ensureDefaultStatuses();
         $copies = BookCopy::with('book', 'status', 'condition')->paginate(20);
         return view('copies.index', compact('copies'));
     }
@@ -29,7 +31,7 @@ class BookCopyController extends Controller
     {
         $data = $request->validate([
             'book_id' => 'required|exists:books,id',
-            'barcode' => 'required|string|max:100',
+            'barcode' => ['required', 'string', 'max:100', Rule::unique('book_copies', 'barcode')->whereNull('deleted_at')],
             'location' => 'nullable|string|max:255',
             'status_id' => 'nullable|exists:book_copy_statuses,id',
             'condition_id' => 'nullable|exists:book_conditions,id',
@@ -58,7 +60,7 @@ class BookCopyController extends Controller
         $copy = BookCopy::findOrFail($id);
         $data = $request->validate([
             'book_id' => 'required|exists:books,id',
-            'barcode' => 'required|string|max:100',
+            'barcode' => ['required', 'string', 'max:100', Rule::unique('book_copies', 'barcode')->ignore($copy->id)->whereNull('deleted_at')],
             'location' => 'nullable|string|max:255',
             'status_id' => 'nullable|exists:book_copy_statuses,id',
             'condition_id' => 'nullable|exists:book_conditions,id',
@@ -66,6 +68,7 @@ class BookCopyController extends Controller
             'notes' => 'nullable|string',
         ]);
 
+        $data['status_id'] = $data['status_id'] ?? $this->defaultStatusId();
         $copy->update($data);
         session()->flash('success', 'Eksamplar diperbarui.');
         return redirect()->route('copies.index');

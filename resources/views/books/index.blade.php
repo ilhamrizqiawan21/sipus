@@ -9,7 +9,7 @@
         <p>{{ number_format($books->total(), 0, ',', '.') }} judul tersimpan di katalog perpustakaan</p>
       </div>
       <div class="page-actions">
-        <button class="btn btn-secondary" type="button">Import</button>
+        <a class="btn btn-secondary" href="{{ route('books.import.form') }}">Import</a>
         <a class="btn btn-primary" href="{{ route('books.create') }}">Tambah Buku</a>
       </div>
     </section>

@@ -39,7 +39,13 @@
               <tr>
                 <td>{{ $c->id }}</td>
                 <td class="font-monospace small">{{ $c->barcode }}</td>
-                <td>{{ optional($c->book)->title }}</td>
+                <td>
+                  @if($c->book)
+                    {{ $c->book->title }}
+                  @else
+                    <span class="badge text-bg-warning">Buku terhapus</span>
+                  @endif
+                </td>
                 <td>{{ $c->location ?? '-' }}</td>
                 <td><span class="badge text-bg-{{ optional($c->status)->is_available ? 'success' : 'secondary' }}">{{ optional($c->status)->name ?? '-' }}</span></td>
                 <td>{{ optional($c->condition)->name ?? '-' }}</td>

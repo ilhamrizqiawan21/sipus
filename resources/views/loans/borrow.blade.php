@@ -50,19 +50,45 @@
           </div>
           <div class="col-12">
             <label class="form-label">Eksemplar</label>
-            <div class="list-group border">
-              @forelse($copies as $copy)
-                <label class="list-group-item d-flex gap-3 align-items-start">
-                  <input class="form-check-input mt-1" type="checkbox" name="book_copy_ids[]" value="{{ $copy->id }}" @checked(in_array($copy->id, old('book_copy_ids', [])))>
-                  <span>
-                    <span class="fw-semibold">{{ $copy->book->title ?? 'Tanpa judul' }}</span>
-                    <span class="d-block text-body-secondary small">{{ $copy->barcode ?? 'Barcode belum diisi' }} - {{ $copy->location ?? 'Lokasi belum diisi' }}</span>
-                  </span>
-                </label>
-              @empty
-                <div class="list-group-item text-body-secondary">Tidak ada eksemplar tersedia.</div>
-              @endforelse
+            @php($selectedCopies = collect(old('book_copy_ids', []))->map(fn($id) => (int) $id)->all())
+            <div class="table-responsive border rounded">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 64px;">Cek</th>
+                    <th>Buku</th>
+                    <th>Barcode</th>
+                    <th>Lokasi</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @forelse($copies as $copy)
+                    @php($inputId = 'book_copy_' . $copy->id)
+                    <tr>
+                      <td>
+                        <input id="{{ $inputId }}" class="form-check-input" type="checkbox" name="book_copy_ids[]" value="{{ $copy->id }}" @checked(in_array((int) $copy->id, $selectedCopies, true))>
+                      </td>
+                      <td>
+                        <label class="fw-semibold mb-0" for="{{ $inputId }}">{{ $copy->book?->title ?? 'Tanpa judul' }}</label>
+                      </td>
+                      <td class="font-monospace small">{{ $copy->barcode ?? 'Belum diisi' }}</td>
+                      <td>{{ $copy->location ?? '-' }}</td>
+                      <td>
+                        <span class="badge text-bg-{{ optional($copy->status)->is_available ? 'success' : 'secondary' }}">
+                          {{ optional($copy->status)->name ?? 'Tersedia' }}
+                        </span>
+                      </td>
+                    </tr>
+                  @empty
+                    <tr>
+                      <td colspan="5" class="text-center text-body-secondary py-4">Tidak ada eksemplar tersedia.</td>
+                    </tr>
+                  @endforelse
+                </tbody>
+              </table>
             </div>
+            @error('book_copy_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
           </div>
           <div class="col-12">
             <label class="form-label" for="notes">Catatan</label>

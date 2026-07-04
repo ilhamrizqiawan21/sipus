@@ -28,6 +28,7 @@ class LoanController extends Controller
         $members = Member::where('is_active', true)->orderBy('name')->get();
         $availableStatusId = $this->availableStatusId();
         $copies = BookCopy::with('book', 'status')
+            ->whereHas('book')
             ->where(function ($query) use ($availableStatusId) {
                 $query->where('status_id', $availableStatusId)
                     ->orWhereNull('status_id')
@@ -44,7 +45,7 @@ class LoanController extends Controller
         $data = $request->validate([
             'member_id' => 'required|exists:members,id',
             'book_copy_ids' => 'required|array|min:1',
-            'book_copy_ids.*' => 'exists:book_copies,id',
+            'book_copy_ids.*' => 'distinct|exists:book_copies,id',
             'borrow_date' => 'required|date',
             'duration_days' => 'required|integer|min:1',
             'notes' => 'nullable|string',
@@ -52,11 +53,23 @@ class LoanController extends Controller
 
         try {
             DB::beginTransaction();
-            $member = Member::findOrFail($data['member_id']);
+            $member = Member::with('class', 'memberType')->findOrFail($data['member_id']);
+            $availableStatusId = $this->availableStatusId();
             $borrowedStatusId = $this->borrowedStatusId();
             $borrowDate = Carbon::parse($data['borrow_date'])->startOfDay();
-            $dueDate = $borrowDate->copy()->addDays($data['duration_days']);
+            $durationDays = (int) $data['duration_days'];
+            $dueDate = $borrowDate->copy()->addDays($durationDays);
             $transactionCode = 'TXN-' . now()->format('YmdHis');
+            $bookCopyIds = collect($data['book_copy_ids'])->map(fn ($id) => (int) $id)->unique()->values();
+            $bookCopies = BookCopy::with('book', 'status')
+                ->whereIn('id', $bookCopyIds)
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            if ($bookCopies->count() !== $bookCopyIds->count()) {
+                throw new \RuntimeException('Ada eksemplar yang tidak ditemukan.');
+            }
 
             $transaction = BorrowingTransaction::create([
                 'transaction_code' => $transactionCode,
@@ -64,7 +77,7 @@ class LoanController extends Controller
                 'member_code_snapshot' => $member->member_code,
                 'member_name_snapshot' => $member->name,
                 'member_class_snapshot' => $member->class?->name,
-                'member_type_snapshot' => $member->memberType?->name,
+                'member_type_snapshot' => $member->memberType?->name ?? 'Anggota',
                 'borrow_date' => $borrowDate,
                 'due_date' => $dueDate,
                 'status' => 'borrowed',
@@ -73,12 +86,20 @@ class LoanController extends Controller
                 'created_by' => auth()->id(),
             ]);
 
-            foreach ($data['book_copy_ids'] as $bookCopyId) {
-                $bookCopy = BookCopy::with('book')->findOrFail($bookCopyId);
-                if ((int) $bookCopy->status_id === $borrowedStatusId) {
-                    throw new \RuntimeException('Eksemplar ' . ($bookCopy->barcode ?? $bookCopy->id) . ' sedang dipinjam.');
+            foreach ($bookCopyIds as $bookCopyId) {
+                $bookCopy = $bookCopies->get($bookCopyId);
+                if (!$this->isCopyAvailable($bookCopy, $availableStatusId)) {
+                    if ((int) $bookCopy->status_id === $borrowedStatusId) {
+                        throw new \RuntimeException('Eksemplar ' . ($bookCopy->barcode ?? $bookCopy->id) . ' sedang dipinjam.');
+                    }
+
+                    throw new \RuntimeException('Eksemplar ' . ($bookCopy->barcode ?? $bookCopy->id) . ' tidak tersedia untuk dipinjam.');
                 }
                 $book = $bookCopy->book;
+                if (!$book) {
+                    throw new \RuntimeException('Eksemplar ' . ($bookCopy->barcode ?? $bookCopy->id) . ' tidak memiliki data buku.');
+                }
+
                 BorrowingItem::create([
                     'borrowing_transaction_id' => $transaction->id,
                     'book_copy_id' => $bookCopyId,
@@ -111,32 +132,46 @@ class LoanController extends Controller
     {
         $data = $request->validate([
             'book_copy_ids' => 'required|array|min:1',
+            'book_copy_ids.*' => 'distinct|exists:book_copies,id',
             'return_date' => 'required|date',
             'notes' => 'nullable|string',
         ]);
 
         try {
             DB::beginTransaction();
-            $transaction = BorrowingTransaction::findOrFail($transactionId);
+            $transaction = BorrowingTransaction::with('borrowingItems')->findOrFail($transactionId);
+            if ($transaction->status === 'returned') {
+                throw new \RuntimeException('Transaksi ini sudah selesai dikembalikan.');
+            }
+
             $availableStatusId = $this->availableStatusId();
             $returnDate = Carbon::parse($data['return_date'])->startOfDay();
+            $bookCopyIds = collect($data['book_copy_ids'])->map(fn ($id) => (int) $id)->unique()->values();
+            $borrowingItems = BorrowingItem::where('borrowing_transaction_id', $transactionId)
+                ->whereIn('book_copy_id', $bookCopyIds)
+                ->where('status', '!=', 'returned')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('book_copy_id');
 
-            foreach ($data['book_copy_ids'] as $bookCopyId) {
-                $borrowingItem = BorrowingItem::where('borrowing_transaction_id', $transactionId)
-                    ->where('book_copy_id', $bookCopyId)->first();
-                if ($borrowingItem) {
-                    $borrowingItem->update(['return_date' => $returnDate, 'status' => 'returned']);
-                    BookCopy::findOrFail($bookCopyId)->update(['status_id' => $availableStatusId]);
-                    if ($returnDate->gt(Carbon::parse($borrowingItem->due_date))) {
-                        $overdueDays = $returnDate->diffInDays(Carbon::parse($borrowingItem->due_date));
-                        Fine::create([
-                            'borrowing_transaction_id' => $transaction->id,
-                            'book_copy_id' => $bookCopyId,
-                            'reason' => 'Overdue (' . $overdueDays . ' days)',
-                            'amount' => $overdueDays * 5000,
-                            'status' => 'unpaid',
-                        ]);
-                    }
+            if ($borrowingItems->count() !== $bookCopyIds->count()) {
+                throw new \RuntimeException('Ada eksemplar yang tidak termasuk transaksi aktif ini atau sudah dikembalikan.');
+            }
+
+            foreach ($bookCopyIds as $bookCopyId) {
+                $borrowingItem = $borrowingItems->get($bookCopyId);
+                $borrowingItem->update(['return_date' => $returnDate, 'status' => 'returned']);
+                BookCopy::findOrFail($bookCopyId)->update(['status_id' => $availableStatusId]);
+
+                if ($returnDate->gt(Carbon::parse($borrowingItem->due_date))) {
+                    $overdueDays = (int) ceil($returnDate->diffInDays(Carbon::parse($borrowingItem->due_date)));
+                    Fine::create([
+                        'borrowing_transaction_id' => $transaction->id,
+                        'book_copy_id' => $bookCopyId,
+                        'reason' => 'Overdue (' . $overdueDays . ' days)',
+                        'amount' => $overdueDays * 5000,
+                        'status' => 'unpaid',
+                    ]);
                 }
             }
 
@@ -172,5 +207,18 @@ class LoanController extends Controller
             ['name' => 'Borrowed'],
             ['description' => 'Sedang dipinjam', 'is_available' => false, 'is_active' => true]
         )->id;
+    }
+
+    private function isCopyAvailable(BookCopy $bookCopy, int $availableStatusId): bool
+    {
+        if (empty($bookCopy->status_id)) {
+            return true;
+        }
+
+        if ((int) $bookCopy->status_id === $availableStatusId) {
+            return true;
+        }
+
+        return (bool) optional($bookCopy->status)->is_available;
     }
 }

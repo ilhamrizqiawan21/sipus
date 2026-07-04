@@ -25,7 +25,7 @@
           </div>
 
           <nav class="sidebar-nav" aria-label="Navigasi utama">
-            <div class="nav-section">Utama</div>
+            <div class="nav-section">Menu</div>
             <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">
               <span class="nav-icon">D</span>
               <span>Dashboard</span>
