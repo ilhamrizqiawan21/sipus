@@ -21,7 +21,10 @@
       <h1 class="h3 mb-1">Detail Peminjaman</h1>
       <p class="text-body-secondary mb-0">{{ $transaction->transaction_code }}</p>
     </div>
-    <a href="{{ route('loans.index') }}" class="btn btn-outline-secondary">Kembali</a>
+    <div class="d-flex gap-2">
+      <a href="{{ route('reports.fines') }}" class="btn btn-outline-primary">Laporan Denda</a>
+      <a href="{{ route('loans.index') }}" class="btn btn-outline-secondary">Kembali</a>
+    </div>
   </div>
 
   <div class="card shadow-sm">
@@ -61,18 +64,22 @@
         <thead class="table-light">
           <tr>
             <th>Judul Buku</th>
-            <th>ISBN</th>
+            <th>Kode Inventaris</th>
+            <th>Jatuh Tempo</th>
             <th>Status</th>
             <th>Tanggal Kembali</th>
+            <th class="text-end">Denda</th>
           </tr>
         </thead>
         <tbody>
           @foreach($transaction->borrowingItems as $item)
             <tr>
               <td>{{ $item->book_title_snapshot }}</td>
-              <td>{{ $item->book_isbn_snapshot ?? '-' }}</td>
+              <td class="font-monospace small">{{ $item->inventory_code_snapshot }}</td>
+              <td>{{ $item->due_date?->format('d/m/Y') ?? '-' }}</td>
               <td><span class="badge text-bg-{{ $item->status === 'returned' ? 'success' : 'primary' }}">{{ ucfirst($item->status) }}</span></td>
               <td>{{ $item->return_date?->format('d/m/Y') ?? '-' }}</td>
+              <td class="text-end">Rp {{ number_format($item->fine_amount ?? 0, 0, ',', '.') }}</td>
             </tr>
           @endforeach
         </tbody>
@@ -88,9 +95,24 @@
           <div class="list-group-item d-flex align-items-center justify-content-between gap-3">
             <div>
               <div class="fw-semibold">{{ $fine->reason }}</div>
-              <div class="text-body-secondary small">Rp {{ number_format($fine->amount, 0, ',', '.') }}</div>
+              <div class="text-body-secondary small">
+                Rp {{ number_format($fine->amount, 0, ',', '.') }}
+                @if($fine->status === 'paid' && $fine->paid_date)
+                  - lunas {{ $fine->paid_date->format('d/m/Y') }}
+                @endif
+              </div>
             </div>
-            <span class="badge text-bg-{{ $fine->status === 'paid' ? 'success' : 'danger' }}">{{ ucfirst($fine->status) }}</span>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge text-bg-{{ $fine->status === 'paid' ? 'success' : ($fine->status === 'waived' ? 'secondary' : 'danger') }}">
+                {{ $fine->status === 'paid' ? 'Lunas' : ($fine->status === 'waived' ? 'Dihapus' : 'Belum Lunas') }}
+              </span>
+              @if($fine->status === 'unpaid')
+                <form method="POST" action="{{ route('fines.paid', $fine->id) }}" data-confirm="Tandai denda ini sudah lunas?">
+                  @csrf
+                  <button class="btn btn-sm btn-outline-success" type="submit">Tandai Lunas</button>
+                </form>
+              @endif
+            </div>
           </div>
         @endforeach
       </div>

@@ -46,9 +46,9 @@
                 <td class="text-end">
                   <div class="btn-group btn-group-sm">
                     <a class="btn btn-outline-primary" href="{{ route('procurements.show', $o->id) }}">Lihat</a>
-                    <form action="{{ route('procurements.destroy', $o->id) }}" method="post">
+                    <form action="{{ route('procurements.destroy', $o->id) }}" method="post" data-confirm="Hapus pengadaan ini?">
                       @csrf @method('delete')
-                      <button class="btn btn-outline-danger rounded-start-0" onclick="return confirm('Hapus pengadaan ini?')">Hapus</button>
+                      <button class="btn btn-outline-danger rounded-start-0" type="submit">Hapus</button>
                     </form>
                   </div>
                 </td>

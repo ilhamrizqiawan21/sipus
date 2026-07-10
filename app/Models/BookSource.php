@@ -5,10 +5,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 
-#[Fillable(['name', 'description', 'is_active'])]
+#[Fillable(['name', 'description', 'is_active', 'created_by', 'updated_by'])]
 class BookSource extends Model
 {
     use HasFactory, SoftDeletes;
     protected $table = 'book_sources';
-    public function books() { return $this->hasMany(Book::class, 'source_id'); }
+    protected $casts = ['is_active' => 'boolean'];
 }

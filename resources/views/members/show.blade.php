@@ -32,7 +32,8 @@
         <div class="row g-3">
           <div class="col-md-4"><div class="text-body-secondary small">Kode Anggota</div><div class="fw-semibold">{{ $member->member_code }}</div></div>
           <div class="col-md-4"><div class="text-body-secondary small">NIS/NIP</div><div class="fw-semibold">{{ $member->nis_nisn ?? $member->nip ?? '-' }}</div></div>
-          <div class="col-md-4"><div class="text-body-secondary small">Jenis</div><div class="fw-semibold">{{ $member->member_type_id ? 'Tipe #' . $member->member_type_id : 'Anggota' }}</div></div>
+          <div class="col-md-4"><div class="text-body-secondary small">Jenis</div><div class="fw-semibold">{{ $member->memberType?->name ?? 'Anggota' }}</div></div>
+          <div class="col-md-4"><div class="text-body-secondary small">Kelas</div><div class="fw-semibold">{{ $member->class?->name ?? '-' }}</div></div>
           <div class="col-md-4"><div class="text-body-secondary small">Telepon</div><div class="fw-semibold">{{ $member->phone ?? '-' }}</div></div>
           <div class="col-md-4"><div class="text-body-secondary small">Email</div><div class="fw-semibold">{{ $member->email ?? '-' }}</div></div>
           <div class="col-md-4"><div class="text-body-secondary small">Tanggal Bergabung</div><div class="fw-semibold">{{ $member->join_date ? \Illuminate\Support\Carbon::parse($member->join_date)->format('d M Y') : '-' }}</div></div>

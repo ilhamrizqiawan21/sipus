@@ -9,15 +9,16 @@ class SettingController extends Controller
 {
     public function index(Request $request)
     {
-        $settings = Setting::all()->pluck('setting_value', 'setting_key')->toArray();
+        $settings = $this->settingValues();
         if ($request->wantsJson()) return response()->json($settings);
         return view('settings.index', compact('settings'));
     }
 
     public function edit(Request $request)
     {
-        $settings = Setting::all();
-        return view('settings.edit', compact('settings'));
+        $settings = $this->settingValues();
+        if ($request->wantsJson()) return response()->json($settings);
+        return view('settings.index', compact('settings'));
     }
 
     public function update(Request $request)
@@ -29,16 +30,24 @@ class SettingController extends Controller
             'library_email' => 'nullable|email',
             'max_borrow_limit' => 'nullable|integer|min:1',
             'borrow_duration_days' => 'nullable|integer|min:1',
-            'late_fine_per_day' => 'nullable|numeric|min:0',
+            'fine_per_day' => 'nullable|numeric|min:0',
         ]);
 
         foreach ($validated as $key => $value) {
             if ($value !== null) {
-                Setting::updateOrCreate(['setting_key' => $key], ['setting_value' => $value]);
+                Setting::updateOrCreate(
+                    ['key' => $key],
+                    ['value' => $value, 'type' => is_numeric($value) ? 'integer' : 'string', 'updated_by' => auth()->id()]
+                );
             }
         }
 
         if ($request->wantsJson()) return response()->json(['message' => 'Updated']);
         return redirect()->route('settings.index')->with('success', 'Pengaturan diperbarui');
+    }
+
+    private function settingValues(): array
+    {
+        return Setting::getAll();
     }
 }

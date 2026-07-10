@@ -8,6 +8,7 @@ use App\Models\BookCopy;
 use App\Models\BookCopyStatus;
 use App\Models\Member;
 use App\Models\Fine;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -16,6 +17,8 @@ class LoanController extends Controller
 {
     public function index(Request $request)
     {
+        $this->syncOverdueStatuses();
+
         $loans = BorrowingTransaction::with('member', 'borrowingItems')
             ->orderByDesc('created_at')
             ->paginate(20);
@@ -27,17 +30,18 @@ class LoanController extends Controller
     {
         $members = Member::where('is_active', true)->orderBy('name')->get();
         $availableStatusId = $this->availableStatusId();
-        $copies = BookCopy::with('book', 'status')
+        $totalCopies = BookCopy::whereHas('book')->count();
+        $copies = BookCopy::with('book', 'status', 'bookshelf')
             ->whereHas('book')
             ->where(function ($query) use ($availableStatusId) {
                 $query->where('status_id', $availableStatusId)
-                    ->orWhereNull('status_id')
-                    ->orWhereHas('status', fn ($status) => $status->where('is_available', true));
+                    ->orWhereNull('status_id');
             })
-            ->orderBy('barcode')
+            ->orderBy('inventory_code')
             ->get();
+        $unavailableCopies = max(0, $totalCopies - $copies->count());
 
-        return view('loans.borrow', compact('members', 'copies'));
+        return view('loans.borrow', compact('members', 'copies', 'totalCopies', 'unavailableCopies'));
     }
 
     public function store(Request $request)
@@ -54,13 +58,28 @@ class LoanController extends Controller
         try {
             DB::beginTransaction();
             $member = Member::with('class', 'memberType')->findOrFail($data['member_id']);
+
+            if (!$member->is_active) {
+                throw new \RuntimeException('Anggota tidak aktif tidak dapat melakukan peminjaman.');
+            }
+
+            $bookCopyIds = collect($data['book_copy_ids'])->map(fn ($id) => (int) $id)->unique()->values();
+            $borrowLimit = $member->memberType?->borrow_limit ?? 2;
+            $currentBorrowed = BorrowingItem::where('status', 'borrowed')
+                ->whereHas('borrowingTransaction', fn ($query) => $query->where('member_id', $member->id)
+                    ->whereIn('status', ['borrowed', 'partially_returned', 'overdue']))
+                ->count();
+
+            if ($currentBorrowed + $bookCopyIds->count() > $borrowLimit) {
+                throw new \RuntimeException('Batas pinjam anggota terlampaui. Maksimum ' . $borrowLimit . ' buku.');
+            }
+
             $availableStatusId = $this->availableStatusId();
             $borrowedStatusId = $this->borrowedStatusId();
             $borrowDate = Carbon::parse($data['borrow_date'])->startOfDay();
             $durationDays = (int) $data['duration_days'];
             $dueDate = $borrowDate->copy()->addDays($durationDays);
             $transactionCode = 'TXN-' . now()->format('YmdHis');
-            $bookCopyIds = collect($data['book_copy_ids'])->map(fn ($id) => (int) $id)->unique()->values();
             $bookCopies = BookCopy::with('book', 'status')
                 ->whereIn('id', $bookCopyIds)
                 ->lockForUpdate()
@@ -104,10 +123,12 @@ class LoanController extends Controller
                     'borrowing_transaction_id' => $transaction->id,
                     'book_copy_id' => $bookCopyId,
                     'book_title_snapshot' => $book->title,
-                    'book_isbn_snapshot' => $book->isbn,
+                    'inventory_code_snapshot' => $bookCopy->inventory_code,
+                    'condition_at_borrow_id' => $bookCopy->condition_id,
                     'borrow_date' => $borrowDate,
                     'due_date' => $dueDate,
                     'status' => 'borrowed',
+                    'created_by' => auth()->id(),
                 ]);
                 $bookCopy->update(['status_id' => $borrowedStatusId]);
             }
@@ -123,8 +144,14 @@ class LoanController extends Controller
 
     public function return(Request $request)
     {
+        $this->syncOverdueStatuses();
+
         $transactions = BorrowingTransaction::where('status', '!=', 'returned')
-            ->with('member', 'borrowingItems')->orderByDesc('due_date')->get();
+            ->whereHas('borrowingItems', fn ($query) => $query->where('status', 'borrowed'))
+            ->with(['member', 'borrowingItems' => fn ($query) => $query->where('status', 'borrowed')->orderBy('due_date')])
+            ->orderByDesc('due_date')
+            ->get();
+
         return view('loans.return', compact('transactions'));
     }
 
@@ -145,11 +172,12 @@ class LoanController extends Controller
             }
 
             $availableStatusId = $this->availableStatusId();
+            $finePerDay = $this->lateFinePerDay();
             $returnDate = Carbon::parse($data['return_date'])->startOfDay();
             $bookCopyIds = collect($data['book_copy_ids'])->map(fn ($id) => (int) $id)->unique()->values();
             $borrowingItems = BorrowingItem::where('borrowing_transaction_id', $transactionId)
                 ->whereIn('book_copy_id', $bookCopyIds)
-                ->where('status', '!=', 'returned')
+                ->where('status', 'borrowed')
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('book_copy_id');
@@ -160,24 +188,42 @@ class LoanController extends Controller
 
             foreach ($bookCopyIds as $bookCopyId) {
                 $borrowingItem = $borrowingItems->get($bookCopyId);
-                $borrowingItem->update(['return_date' => $returnDate, 'status' => 'returned']);
-                BookCopy::findOrFail($bookCopyId)->update(['status_id' => $availableStatusId]);
+                $dueDate = Carbon::parse($borrowingItem->due_date)->startOfDay();
+                $overdueDays = $returnDate->gt($dueDate) ? $dueDate->diffInDays($returnDate) : 0;
+                $fineAmount = $overdueDays * $finePerDay;
 
-                if ($returnDate->gt(Carbon::parse($borrowingItem->due_date))) {
-                    $overdueDays = (int) ceil($returnDate->diffInDays(Carbon::parse($borrowingItem->due_date)));
+                $borrowingItem->update([
+                    'return_date' => $returnDate,
+                    'status' => 'returned',
+                    'fine_amount' => $fineAmount,
+                    'returned_by' => auth()->id(),
+                    'updated_by' => auth()->id(),
+                ]);
+                BookCopy::findOrFail($bookCopyId)->update([
+                    'status_id' => $availableStatusId,
+                    'updated_by' => auth()->id(),
+                ]);
+
+                if ($overdueDays > 0) {
                     Fine::create([
+                        'borrowing_item_id' => $borrowingItem->id,
                         'borrowing_transaction_id' => $transaction->id,
                         'book_copy_id' => $bookCopyId,
-                        'reason' => 'Overdue (' . $overdueDays . ' days)',
-                        'amount' => $overdueDays * 5000,
+                        'fine_type' => 'late',
+                        'reason' => 'Terlambat ' . $overdueDays . ' hari',
+                        'amount' => $fineAmount,
                         'status' => 'unpaid',
+                        'created_by' => auth()->id(),
                     ]);
                 }
             }
 
             $allReturned = !BorrowingItem::where('borrowing_transaction_id', $transactionId)
                 ->where('status', '!=', 'returned')->exists();
-            $transaction->update(['status' => $allReturned ? 'returned' : 'partially_returned', 'updated_by' => auth()->id()]);
+            $transaction->update([
+                'status' => $this->nextTransactionStatus($transaction, $allReturned),
+                'updated_by' => auth()->id(),
+            ]);
             DB::commit();
             if ($request->wantsJson()) return response()->json($transaction);
             return redirect()->route('loans.index')->with('success', 'Pengembalian diproses');
@@ -196,16 +242,16 @@ class LoanController extends Controller
     private function availableStatusId(): int
     {
         return BookCopyStatus::firstOrCreate(
-            ['name' => 'Available'],
-            ['description' => 'Siap dipinjam', 'is_available' => true, 'is_active' => true]
+            ['code' => 'available'],
+            ['name' => 'Tersedia', 'is_active' => true]
         )->id;
     }
 
     private function borrowedStatusId(): int
     {
         return BookCopyStatus::firstOrCreate(
-            ['name' => 'Borrowed'],
-            ['description' => 'Sedang dipinjam', 'is_available' => false, 'is_active' => true]
+            ['code' => 'borrowed'],
+            ['name' => 'Dipinjam', 'is_active' => true]
         )->id;
     }
 
@@ -219,6 +265,31 @@ class LoanController extends Controller
             return true;
         }
 
-        return (bool) optional($bookCopy->status)->is_available;
+        return optional($bookCopy->status)->code === 'available';
+    }
+
+    private function syncOverdueStatuses(): void
+    {
+        BorrowingTransaction::whereIn('status', ['borrowed', 'partially_returned'])
+            ->whereDate('due_date', '<', now()->toDateString())
+            ->update(['status' => 'overdue']);
+    }
+
+    private function nextTransactionStatus(BorrowingTransaction $transaction, bool $allReturned): string
+    {
+        if ($allReturned) {
+            return 'returned';
+        }
+
+        return Carbon::parse($transaction->due_date)->isPast() ? 'overdue' : 'partially_returned';
+    }
+
+    private function lateFinePerDay(): int
+    {
+        return (int) (
+            Setting::getSetting('fine_per_day')
+            ?? Setting::getSetting('late_fine_per_day')
+            ?? 5000
+        );
     }
 }

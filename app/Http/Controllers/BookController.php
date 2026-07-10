@@ -6,21 +6,38 @@ use App\Models\Book;
 use Illuminate\Http\Request;
 use App\Models\Category;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class BookController extends Controller
 {
     public function index(Request $request)
     {
-        $books = Book::paginate(15);
+        $query = Book::with('category');
+
+        if ($search = $request->query('q')) {
+            $search = trim($search);
+            $query->where(function ($query) use ($search) {
+                $query->where('title', 'like', "%{$search}%")
+                    ->orWhere('subtitle', 'like', "%{$search}%")
+                    ->orWhere('isbn', 'like', "%{$search}%")
+                    ->orWhereHas('category', function ($query) use ($search) {
+                        $query->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $books = $query->paginate(15)->withQueryString();
+
         if ($request->wantsJson()) {
             return response()->json($books);
         }
+
         return view('books.index', ['books' => $books]);
     }
 
     public function show(Request $request, $id)
     {
-        $book = Book::findOrFail($id);
+        $book = Book::with('category')->findOrFail($id);
         if ($request->wantsJson()) {
             return response()->json($book);
         }
@@ -47,8 +64,12 @@ class BookController extends Controller
     {
         $data = $request->validate([
             'title' => 'required|string|max:255',
-            'isbn' => 'nullable|string|max:20',
+            'subtitle' => 'nullable|string|max:255',
+            'isbn' => ['nullable', 'string', 'max:20', Rule::unique('books', 'isbn')],
             'category_id' => 'nullable|integer|exists:categories,id',
+            'publication_year' => 'nullable|integer|digits:4|between:1000,9999',
+            'synopsis' => 'nullable|string',
+            'cover_image' => 'nullable|image|max:2048',
         ]);
 
         if ($request->hasFile('cover_image')) {
@@ -56,11 +77,6 @@ class BookController extends Controller
             $data['cover_image'] = '/storage/' . $path;
         }
 
-        $data['subtitle'] = $request->input('subtitle');
-        $data['publication_year'] = $request->input('publication_year');
-        $data['synopsis'] = $request->input('synopsis');
-
-        // ensure category_id exists if DB requires it
         if (empty($data['category_id'])) {
             $data['category_id'] = $this->ensureDefaultCategory();
         }
@@ -78,18 +94,18 @@ class BookController extends Controller
         $book = Book::findOrFail($id);
         $data = $request->validate([
             'title' => 'required|string|max:255',
-            'isbn' => 'nullable|string|max:20',
+            'subtitle' => 'nullable|string|max:255',
+            'isbn' => ['nullable', 'string', 'max:20', Rule::unique('books', 'isbn')->ignore($book->id)],
             'category_id' => 'nullable|integer|exists:categories,id',
+            'publication_year' => 'nullable|integer|digits:4|between:1000,9999',
+            'synopsis' => 'nullable|string',
+            'cover_image' => 'nullable|image|max:2048',
         ]);
 
         if ($request->hasFile('cover_image')) {
             $path = $request->file('cover_image')->store('covers', 'public');
             $data['cover_image'] = '/storage/' . $path;
         }
-
-        $data['subtitle'] = $request->input('subtitle');
-        $data['publication_year'] = $request->input('publication_year');
-        $data['synopsis'] = $request->input('synopsis');
 
         if (empty($data['category_id'])) {
             $data['category_id'] = $this->ensureDefaultCategory();

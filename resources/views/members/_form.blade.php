@@ -11,6 +11,26 @@
     @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
   </div>
   <div class="col-md-4">
+    <label class="form-label" for="member_type_id">Tipe Anggota</label>
+    <select class="form-select @error('member_type_id') is-invalid @enderror" id="member_type_id" name="member_type_id">
+      <option value="">Pilih tipe</option>
+      @foreach($memberTypes ?? [] as $type)
+        <option value="{{ $type->id }}" @selected(old('member_type_id', $member->member_type_id ?? '') == $type->id)>{{ $type->name }}</option>
+      @endforeach
+    </select>
+    @error('member_type_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+  </div>
+  <div class="col-md-4">
+    <label class="form-label" for="class_id">Kelas</label>
+    <select class="form-select @error('class_id') is-invalid @enderror" id="class_id" name="class_id">
+      <option value="">Pilih kelas</option>
+      @foreach($classes ?? [] as $class)
+        <option value="{{ $class->id }}" @selected(old('class_id', $member->class_id ?? '') == $class->id)>{{ $class->name }}</option>
+      @endforeach
+    </select>
+    @error('class_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+  </div>
+  <div class="col-md-4">
     <label class="form-label" for="nis_nisn">NIS/NISN</label>
     <input class="form-control" id="nis_nisn" name="nis_nisn" value="{{ old('nis_nisn', $member->nis_nisn ?? '') }}">
   </div>
@@ -22,8 +42,8 @@
     <label class="form-label" for="gender">Jenis Kelamin</label>
     <select class="form-select" id="gender" name="gender">
       <option value="">Pilih</option>
-      <option value="M" @selected(old('gender', $member->gender ?? '') === 'M')>Laki-laki</option>
-      <option value="F" @selected(old('gender', $member->gender ?? '') === 'F')>Perempuan</option>
+      <option value="L" @selected(old('gender', $member->gender ?? '') === 'L')>Laki-laki</option>
+      <option value="P" @selected(old('gender', $member->gender ?? '') === 'P')>Perempuan</option>
     </select>
   </div>
   <div class="col-md-4">

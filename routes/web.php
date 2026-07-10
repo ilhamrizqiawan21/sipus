@@ -1,77 +1,96 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\BookCopyController;
+use App\Http\Controllers\FineController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\LoanController;
+use App\Http\Controllers\ProcurementController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
-use App\Http\Controllers\AuthController;
 
-Route::get('/', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::middleware('auth')->group(function () {
+    Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Books
-Route::get('/books', [BookController::class, 'index'])->name('books.index');
-Route::get('/books/create', [BookController::class, 'create'])->name('books.create');
-Route::get('/books/import', [BookController::class, 'importForm'])->name('books.import.form');
-Route::post('/books/import', [BookController::class, 'import'])->name('books.import');
-Route::post('/books', [BookController::class, 'store'])->name('books.store');
-Route::get('/books/{id}/edit', [BookController::class, 'edit'])->name('books.edit');
-Route::get('/books/{id}', [BookController::class, 'show'])->name('books.show');
-Route::match(['put','patch'],'/books/{id}', [BookController::class, 'update'])->name('books.update');
-Route::delete('/books/{id}', [BookController::class, 'destroy'])->name('books.destroy');
+    Route::controller(BookController::class)->prefix('books')->name('books.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::get('/import', 'importForm')->name('import.form');
+        Route::post('/import', 'import')->name('import');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{id}/edit', 'edit')->name('edit');
+        Route::get('/{id}', 'show')->name('show');
+        Route::match(['put', 'patch'], '/{id}', 'update')->name('update');
+        Route::delete('/{id}', 'destroy')->name('destroy');
+    });
 
-// Members
-Route::get('/members', [MemberController::class, 'index'])->name('members.index');
-Route::get('/members/create', [MemberController::class, 'create'])->name('members.create');
-Route::post('/members', [MemberController::class, 'store'])->name('members.store');
-Route::get('/members/{id}/edit', [MemberController::class, 'edit'])->name('members.edit');
-Route::get('/members/{id}', [MemberController::class, 'show'])->name('members.show');
-Route::match(['put','patch'], '/members/{id}', [MemberController::class, 'update'])->name('members.update');
-Route::delete('/members/{id}', [MemberController::class, 'destroy'])->name('members.destroy');
+    Route::controller(MemberController::class)->prefix('members')->name('members.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{id}/edit', 'edit')->name('edit');
+        Route::get('/{id}', 'show')->name('show');
+        Route::match(['put', 'patch'], '/{id}', 'update')->name('update');
+        Route::delete('/{id}', 'destroy')->name('destroy');
+    });
 
-// Inventory
-Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
-Route::redirect('/inventory/procurement', '/procurements')->name('inventory.procurement');
-// Procurements
-Route::get('/procurements', [App\Http\Controllers\ProcurementController::class, 'index'])->name('procurements.index');
-Route::get('/procurements/create', [App\Http\Controllers\ProcurementController::class, 'create'])->name('procurements.create');
-Route::post('/procurements', [App\Http\Controllers\ProcurementController::class, 'store'])->name('procurements.store');
-Route::get('/procurements/{id}', [App\Http\Controllers\ProcurementController::class, 'show'])->name('procurements.show');
-Route::post('/procurements/{id}/approve', [App\Http\Controllers\ProcurementController::class, 'approve'])->name('procurements.approve');
-Route::delete('/procurements/{id}', [App\Http\Controllers\ProcurementController::class, 'destroy'])->name('procurements.destroy');
-// Book copies (eksamplar)
-Route::get('/copies', [App\Http\Controllers\BookCopyController::class, 'index'])->name('copies.index');
-Route::get('/copies/create', [App\Http\Controllers\BookCopyController::class, 'create'])->name('copies.create');
-Route::post('/copies', [App\Http\Controllers\BookCopyController::class, 'store'])->name('copies.store');
-Route::get('/copies/{id}/edit', [App\Http\Controllers\BookCopyController::class, 'edit'])->name('copies.edit');
-Route::match(['put','patch'],'/copies/{id}', [App\Http\Controllers\BookCopyController::class, 'update'])->name('copies.update');
-Route::delete('/copies/{id}', [App\Http\Controllers\BookCopyController::class, 'destroy'])->name('copies.destroy');
+    Route::controller(InventoryController::class)->prefix('inventory')->name('inventory.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::redirect('/procurement', '/procurements')->name('procurement');
+    });
 
-// Loans
-Route::get('/loans', [LoanController::class, 'index'])->name('loans.index');
-Route::get('/loans/borrow', [LoanController::class, 'borrow'])->name('loans.borrow');
-Route::post('/loans', [LoanController::class, 'store'])->name('loans.store');
-Route::get('/loans/return', [LoanController::class, 'return'])->name('loans.return');
-Route::post('/loans/{id}/return', [LoanController::class, 'processReturn'])->name('loans.processReturn');
-Route::get('/loans/{id}', [LoanController::class, 'show'])->name('loans.show');
+    Route::controller(ProcurementController::class)->prefix('procurements')->name('procurements.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{id}', 'show')->name('show');
+        Route::post('/{id}/approve', 'approve')->name('approve');
+        Route::delete('/{id}', 'destroy')->name('destroy');
+    });
 
-// Reports
-Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
-Route::get('/reports/circulation', [ReportController::class, 'circulation'])->name('reports.circulation');
-Route::get('/reports/overdue', [ReportController::class, 'overdue'])->name('reports.overdue');
-Route::get('/reports/collection', [ReportController::class, 'collection'])->name('reports.collection');
-Route::get('/reports/fines', [ReportController::class, 'fines'])->name('reports.fines');
+    Route::controller(BookCopyController::class)->prefix('copies')->name('copies.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/{id}/edit', 'edit')->name('edit');
+        Route::match(['put', 'patch'], '/{id}', 'update')->name('update');
+        Route::delete('/{id}', 'destroy')->name('destroy');
+    });
 
-// Settings
-Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
-Route::get('/settings/edit', [SettingController::class, 'edit'])->name('settings.edit');
-Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::controller(LoanController::class)->prefix('loans')->name('loans.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/borrow', 'borrow')->name('borrow');
+        Route::post('/', 'store')->name('store');
+        Route::get('/return', 'return')->name('return');
+        Route::post('/{id}/return', 'processReturn')->name('processReturn');
+        Route::get('/{id}', 'show')->name('show');
+    });
 
-// Auth (web)
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
-Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::controller(ReportController::class)->prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/circulation', 'circulation')->name('circulation');
+        Route::get('/overdue', 'overdue')->name('overdue');
+        Route::get('/collection', 'collection')->name('collection');
+        Route::get('/members', 'members')->name('members');
+        Route::get('/fines', 'fines')->name('fines');
+    });
+
+    Route::post('/fines/{fine}/paid', [FineController::class, 'markPaid'])->name('fines.paid');
+
+    Route::controller(SettingController::class)->prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/edit', 'edit')->name('edit');
+        Route::post('/', 'update')->name('update');
+    });
+});
+
+Route::middleware('guest')->controller(AuthController::class)->group(function () {
+    Route::get('/login', 'showLoginForm')->name('login');
+    Route::post('/login', 'login');
+});
+
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');

@@ -19,16 +19,19 @@
     @if(session('success'))
       <div class="alert alert-success mb-0">{{ session('success') }}</div>
     @endif
+    @if($errors->any())
+      <div class="alert alert-danger mb-0">{{ $errors->first() }}</div>
+    @endif
 
     <section class="card shadow-sm">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th>ID</th>
+              <th>Kode Inventaris</th>
               <th>Barcode</th>
               <th>Buku</th>
-              <th>Lokasi</th>
+              <th>Rak</th>
               <th>Status</th>
               <th>Kondisi</th>
               <th class="text-end">Aksi</th>
@@ -37,8 +40,8 @@
           <tbody>
             @forelse($copies as $c)
               <tr>
-                <td>{{ $c->id }}</td>
-                <td class="font-monospace small">{{ $c->barcode }}</td>
+                <td class="font-monospace small fw-semibold">{{ $c->inventory_code }}</td>
+                <td class="font-monospace small">{{ $c->barcode ?? '-' }}</td>
                 <td>
                   @if($c->book)
                     {{ $c->book->title }}
@@ -46,15 +49,22 @@
                     <span class="badge text-bg-warning">Buku terhapus</span>
                   @endif
                 </td>
-                <td>{{ $c->location ?? '-' }}</td>
-                <td><span class="badge text-bg-{{ optional($c->status)->is_available ? 'success' : 'secondary' }}">{{ optional($c->status)->name ?? '-' }}</span></td>
+                <td>{{ $c->bookshelf ? $c->bookshelf->code . ' - ' . $c->bookshelf->name : '-' }}</td>
+                @php($statusCode = optional($c->status)->code)
+                @php($statusBadge = match ($statusCode) {
+                  'available' => 'success',
+                  'borrowed' => 'warning',
+                  'damaged', 'lost' => 'danger',
+                  default => 'secondary',
+                })
+                <td><span class="badge text-bg-{{ $statusBadge }}">{{ optional($c->status)->name ?? '-' }}</span></td>
                 <td>{{ optional($c->condition)->name ?? '-' }}</td>
                 <td class="text-end">
                   <div class="btn-group btn-group-sm">
                     <a class="btn btn-outline-secondary" href="{{ route('copies.edit', $c->id) }}">Edit</a>
-                    <form action="{{ route('copies.destroy', $c->id) }}" method="post">
+                    <form action="{{ route('copies.destroy', $c->id) }}" method="post" data-confirm="Hapus eksemplar ini?">
                       @csrf @method('delete')
-                      <button class="btn btn-outline-danger rounded-start-0" type="submit" onclick="return confirm('Hapus eksemplar ini?')">Hapus</button>
+                      <button class="btn btn-outline-danger rounded-start-0" type="submit">Hapus</button>
                     </form>
                   </div>
                 </td>

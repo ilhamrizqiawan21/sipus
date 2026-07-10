@@ -49,8 +49,8 @@
             <input id="borrow_duration_days" type="number" name="borrow_duration_days" value="{{ $settings['borrow_duration_days'] ?? 14 }}" min="1" class="form-control">
           </div>
           <div class="col-md-4">
-            <label class="form-label" for="late_fine_per_day">Denda per Hari (Rp)</label>
-            <input id="late_fine_per_day" type="number" name="late_fine_per_day" value="{{ $settings['late_fine_per_day'] ?? 5000 }}" min="0" class="form-control">
+            <label class="form-label" for="fine_per_day">Denda per Hari (Rp)</label>
+            <input id="fine_per_day" type="number" name="fine_per_day" value="{{ $settings['fine_per_day'] ?? 500 }}" min="0" class="form-control">
           </div>
         </div>
 

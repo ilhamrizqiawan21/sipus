@@ -29,6 +29,7 @@
         <dl class="detail-list">
           <div><dt>Judul</dt><dd>{{ $book->title }}</dd></div>
           <div><dt>ISBN</dt><dd>{{ $book->isbn ?? '-' }}</dd></div>
+          <div><dt>Kategori</dt><dd>{{ $book->category?->name ?? 'Tanpa kategori' }}</dd></div>
           <div><dt>Tahun Terbit</dt><dd>{{ $book->publication_year ?? '-' }}</dd></div>
           <div><dt>Nomor Panggil</dt><dd>{{ $book->call_number ?? '-' }}</dd></div>
         </dl>

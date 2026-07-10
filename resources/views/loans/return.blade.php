@@ -77,18 +77,30 @@ function selectTransaction(id, element) {
   const tx = transactions.find(item => item.id == id);
   if (!tx) return;
 
-  const items = (tx.borrowing_items || []).filter(item => item.status !== 'returned');
+  const returnDate = document.getElementById('return_date').value || new Date().toISOString().slice(0, 10);
+  const items = (tx.borrowing_items || []).filter(item => item.status === 'borrowed');
   const html = items.length
     ? items.map(item => `
       <label class="form-check mb-2">
         <input class="form-check-input" type="checkbox" name="book_copy_ids[]" value="${item.book_copy_id}">
-        <span class="form-check-label">${item.book_title_snapshot}</span>
+        <span class="form-check-label">
+          <span class="fw-semibold">${item.book_title_snapshot}</span>
+          <span class="d-block small text-body-secondary">
+            ${item.inventory_code_snapshot} - jatuh tempo ${formatDate(item.due_date)}
+            ${item.due_date < returnDate ? '<span class="text-danger">(terlambat)</span>' : ''}
+          </span>
+        </span>
       </label>
     `).join('')
     : '<div class="text-body-secondary">Semua item pada transaksi ini sudah dikembalikan.</div>';
 
   document.getElementById('items-container').innerHTML = html;
   document.getElementById('return-form').action = `/loans/${id}/return`;
+}
+
+function formatDate(value) {
+  if (!value) return '-';
+  return new Date(value).toLocaleDateString('id-ID');
 }
 </script>
 @endsection

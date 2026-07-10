@@ -16,13 +16,15 @@
 
     <section class="panel table-panel">
       @if(session('success'))
-        <div class="notice success">{{ session('success') }}</div>
+        <div class="alert alert-success m-3 mb-0">{{ session('success') }}</div>
       @endif
       <div class="toolbar">
-        <label class="search-field">
-          <span>⌕</span>
-          <input type="search" placeholder="Cari judul, kode, ISBN...">
-        </label>
+        <form method="GET" action="{{ route('books.index') }}" class="search-field">
+          <label>
+            <span>⌕</span>
+            <input type="search" name="q" placeholder="Cari judul, kode, ISBN..." value="{{ request('q') }}">
+          </label>
+        </form>
         <a class="btn btn-secondary" href="{{ route('books.import.form') }}">Import</a>
         <button class="btn btn-secondary" type="button">Filter</button>
       </div>
@@ -57,13 +59,13 @@
                   <small>{{ $book->subtitle ?? 'Katalog Perpustakaan' }}</small>
                 </td>
                 <td class="mono">{{ $book->isbn ?? '-' }}</td>
-                <td>{{ $book->category_id ? 'Kategori #' . $book->category_id : '-' }}</td>
+                <td>{{ $book->category?->name ?? 'Tanpa kategori' }}</td>
                 <td>{{ $book->publication_year ?? '-' }}</td>
-                <td><span class="status success">{{ ($book->is_active ?? true) ? 'Aktif' : 'Nonaktif' }}</span></td>
+                <td><span class="status success">{{ $book->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
                 <td>
                   <a class="table-action" href="{{ route('books.show', $book->id) }}">Detail</a>
                   <a class="table-action" href="{{ route('books.edit', $book->id) }}">Edit</a>
-                  <form method="post" action="{{ route('books.destroy', $book->id) }}" style="display:inline">@csrf @method('DELETE')<button class="table-action danger" type="submit" onclick="return confirm('Hapus buku ini?')">Hapus</button></form>
+                  <form method="post" action="{{ route('books.destroy', $book->id) }}" style="display:inline" data-confirm="Hapus buku ini?">@csrf @method('DELETE')<button class="table-action danger" type="submit">Hapus</button></form>
                 </td>
               </tr>
             @empty

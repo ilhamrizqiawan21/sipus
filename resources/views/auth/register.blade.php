@@ -1,13 +1,13 @@
-@extends('layouts.app')
+@extends('layouts.auth')
 
 @section('content')
   <div class="auth-wrap">
     <form class="auth-card" method="POST" action="/register">
       @csrf
       <div class="auth-header">
-        <div class="brand-mark">SA</div>
+        <img class="auth-logo" src="{{ asset('logo-sekolah.png') }}" alt="Logo MTs Al-Ihsan">
         <h1>Registrasi Petugas</h1>
-        <p>Buat akun pengguna SIPUS.</p>
+        <p>Buat akun pengguna SIPUS MTs Al-Ihsan.</p>
       </div>
       <label>Nama
         <input type="text" name="name" required>

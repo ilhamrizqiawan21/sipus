@@ -57,8 +57,9 @@
                   <tr>
                     <th style="width: 64px;">Cek</th>
                     <th>Buku</th>
+                    <th>Kode Inventaris</th>
                     <th>Barcode</th>
-                    <th>Lokasi</th>
+                    <th>Rak</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -72,17 +73,25 @@
                       <td>
                         <label class="fw-semibold mb-0" for="{{ $inputId }}">{{ $copy->book?->title ?? 'Tanpa judul' }}</label>
                       </td>
+                      <td class="font-monospace small">{{ $copy->inventory_code }}</td>
                       <td class="font-monospace small">{{ $copy->barcode ?? 'Belum diisi' }}</td>
-                      <td>{{ $copy->location ?? '-' }}</td>
+                      <td>{{ $copy->bookshelf?->code ?? '-' }}</td>
+                      @php($statusBadge = optional($copy->status)->code === 'available' ? 'success' : 'secondary')
                       <td>
-                        <span class="badge text-bg-{{ optional($copy->status)->is_available ? 'success' : 'secondary' }}">
+                        <span class="badge text-bg-{{ $statusBadge }}">
                           {{ optional($copy->status)->name ?? 'Tersedia' }}
                         </span>
                       </td>
                     </tr>
                   @empty
                     <tr>
-                      <td colspan="5" class="text-center text-body-secondary py-4">Tidak ada eksemplar tersedia.</td>
+                      <td colspan="6" class="text-center text-body-secondary py-4">
+                        @if(($totalCopies ?? 0) > 0)
+                          Tidak ada eksemplar tersedia. {{ $unavailableCopies ?? $totalCopies }} eksemplar masih berstatus selain tersedia.
+                        @else
+                          Belum ada eksemplar buku. Tambahkan eksemplar dari menu inventaris terlebih dahulu.
+                        @endif
+                      </td>
                     </tr>
                   @endforelse
                 </tbody>

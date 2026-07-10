@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
+use App\Models\BookCopy;
+use App\Models\BorrowingItem;
 use App\Models\BorrowingTransaction;
+use App\Models\Fine;
 use App\Models\Member;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -20,6 +23,7 @@ class HomeController extends Controller
         $activeLoans = 0;
         $overdueLoans = 0;
         $inventoryCount = 0;
+        $unpaidFines = 0;
         $latestTransactions = [];
         $categoryStats = [];
         $borrowingTrend = [];
@@ -32,18 +36,15 @@ class HomeController extends Controller
 
         try {
             $bookCount = Book::count();
-            $memberCount = Member::count();
+            $memberCount = Member::where('is_active', true)->count();
+            $inventoryCount = BookCopy::count();
+            $activeLoans = BorrowingItem::where('status', 'borrowed')->count();
+            $overdueLoans = BorrowingItem::where('status', 'borrowed')
+                ->whereDate('due_date', '<', $today->toDateString())
+                ->count();
+            $unpaidFines = Fine::where('status', 'unpaid')->sum('amount');
 
             if (DB::getSchemaBuilder()->hasTable('borrowing_transactions')) {
-                $activeLoans = DB::table('borrowing_transactions')
-                    ->whereIn('status', ['borrowed', 'partially_returned', 'overdue'])
-                    ->count();
-
-                $overdueLoans = DB::table('borrowing_transactions')
-                    ->whereIn('status', ['borrowed', 'partially_returned', 'overdue'])
-                    ->whereDate('due_date', '<', $today->toDateString())
-                    ->count();
-
                 $latestTransactions = BorrowingTransaction::with('borrowingItems')
                     ->orderByDesc('created_at')
                     ->limit(5)
@@ -56,6 +57,7 @@ class HomeController extends Controller
                             ->values();
 
                         return [
+                            'id' => $transaction->id,
                             'code' => $transaction->transaction_code,
                             'member' => $transaction->member_name_snapshot,
                             'book' => $bookTitles->isNotEmpty() ? $bookTitles->implode(', ') : '-',
@@ -67,8 +69,9 @@ class HomeController extends Controller
                     ->toArray();
 
                 $trendRows = DB::table('borrowing_items')
-                    ->select(DB::raw("DATE_FORMAT(borrow_date, '%Y-%m') as month_key"), DB::raw("DATE_FORMAT(borrow_date, '%b %Y') as month_label"), DB::raw('count(*) as total'))
-                    ->whereNotNull('borrow_date')
+                    ->join('borrowing_transactions', 'borrowing_items.borrowing_transaction_id', '=', 'borrowing_transactions.id')
+                    ->select(DB::raw("DATE_FORMAT(borrowing_transactions.borrow_date, '%Y-%m') as month_key"), DB::raw("DATE_FORMAT(borrowing_transactions.borrow_date, '%b %Y') as month_label"), DB::raw('count(*) as total'))
+                    ->whereNotNull('borrowing_transactions.borrow_date')
                     ->groupBy('month_key', 'month_label')
                     ->orderBy('month_key')
                     ->limit(7)
@@ -98,9 +101,6 @@ class HomeController extends Controller
                     ->toArray();
             }
 
-            if (DB::getSchemaBuilder()->hasTable('book_copies')) {
-                $inventoryCount = DB::table('book_copies')->count();
-            }
         } catch (\Throwable $exception) {
             // Jika tabel belum ada atau koneksi tidak tersedia, tampilkan data kosong dari controller.
         }
@@ -112,6 +112,7 @@ class HomeController extends Controller
             'activeLoans',
             'overdueLoans',
             'inventoryCount',
+            'unpaidFines',
             'latestTransactions',
             'categoryStats',
             'borrowingTrend',

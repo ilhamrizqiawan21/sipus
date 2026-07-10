@@ -15,11 +15,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call([
+            InitialMasterDataSeeder::class,
+        ]);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $defaultAdminName = trim((string) config('sipus.default_admin.name', 'Administrator SIPUS')) ?: 'Administrator SIPUS';
+        $defaultAdminEmail = trim((string) config('sipus.default_admin.email', 'admin@sipus.local')) ?: 'admin@sipus.local';
+        $defaultAdminPassword = (string) config('sipus.default_admin.password', 'password');
+
+        if ($defaultAdminPassword === '') {
+            $defaultAdminPassword = 'password';
+        }
+
+        User::updateOrCreate([
+            'email' => $defaultAdminEmail,
+        ], [
+            'name' => $defaultAdminName,
+            'password' => $defaultAdminPassword,
         ]);
     }
 }

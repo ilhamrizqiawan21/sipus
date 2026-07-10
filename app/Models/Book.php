@@ -27,7 +27,6 @@ class Book extends Model
     public function language() { return $this->belongsTo(Language::class); }
     public function authors() { return $this->belongsToMany(Author::class, 'book_authors', 'book_id', 'author_id'); }
     public function bookCopies() { return $this->hasMany(BookCopy::class, 'book_id'); }
-    public function bookSources() { return $this->hasMany(BookSource::class); }
     public function procurementItems() { return $this->hasMany(BookProcurementItem::class, 'book_id'); }
     public function createdBy() { return $this->belongsTo(User::class, 'created_by'); }
     public function updatedBy() { return $this->belongsTo(User::class, 'updated_by'); }

@@ -6,10 +6,10 @@
       <div>
         <div class="breadcrumb">SIPUS / Dashboard</div>
         <h1>Dashboard</h1>
-        <p>{{ $today->translatedFormat('l, d F Y') }} - Selamat datang, Admin</p>
+        <p>{{ $today->translatedFormat('l, d F Y') }} - Selamat datang, {{ auth()->user()->name ?? 'Petugas' }}</p>
       </div>
       <div class="page-actions">
-        <a class="btn btn-secondary" href="{{ route('reports.index') }}">Ekspor</a>
+        <a class="btn btn-secondary" href="{{ route('reports.index') }}">Laporan</a>
         <a class="btn btn-primary" href="{{ route('loans.borrow') }}">Peminjaman Baru</a>
       </div>
     </section>
@@ -34,10 +34,22 @@
         <div class="stat-subtitle">Item dalam sirkulasi</div>
       </div>
       <div class="stat-card">
+        <div class="stat-icon danger">T</div>
+        <div class="stat-value">{{ number_format($overdueLoans, 0, ',', '.') }}</div>
+        <div class="stat-label">Buku Terlambat</div>
+        <div class="stat-subtitle">Item belum dikembalikan melewati jatuh tempo</div>
+      </div>
+      <div class="stat-card">
         <div class="stat-icon mint">I</div>
         <div class="stat-value">{{ number_format($inventoryCount, 0, ',', '.') }}</div>
         <div class="stat-label">Total Eksemplar</div>
         <div class="stat-subtitle">Kumpulan salinan fisik buku</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon secondary">D</div>
+        <div class="stat-value">Rp {{ number_format($unpaidFines, 0, ',', '.') }}</div>
+        <div class="stat-label">Denda Belum Lunas</div>
+        <div class="stat-subtitle">Total tagihan denda aktif</div>
       </div>
     </section>
 
@@ -106,14 +118,15 @@
         <a href="{{ route('loans.return') }}">Catat Pengembalian</a>
         <a href="{{ route('inventory.index') }}">Inventaris Eksemplar</a>
         <a href="{{ route('procurements.index') }}">Pengadaan Buku</a>
-        <a href="{{ route('reports.index') }}">Cetak Laporan</a>
+        <a href="{{ route('reports.index') }}">Ringkasan Laporan</a>
+        <a href="{{ route('reports.fines') }}">Laporan Denda</a>
       </div>
     </section>
 
     <section class="panel table-panel">
       <div class="panel-header">
         <h2>Transaksi Terbaru</h2>
-        <a href="#">Lihat semua</a>
+        <a href="{{ route('loans.index') }}">Lihat semua</a>
       </div>
       <div class="table-responsive">
         <table class="data-table">
@@ -130,7 +143,7 @@
           <tbody>
             @forelse ($latestTransactions as $transaction)
               <tr>
-                <td class="mono">{{ $transaction['code'] }}</td>
+                <td class="mono"><a href="{{ route('loans.show', $transaction['id']) }}">{{ $transaction['code'] }}</a></td>
                 <td><strong>{{ $transaction['member'] }}</strong><small>{{ $transaction['book'] }}</small></td>
                 <td>{{ $transaction['book'] }}</td>
                 <td>{{ $transaction['borrowedAt'] }}</td>

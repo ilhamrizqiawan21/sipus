@@ -1,0 +1,219 @@
+# TODO SIPUS
+
+## Tujuan Utama
+
+Menyelesaikan project SIPUS agar menjadi aplikasi perpustakaan sekolah yang stabil, rapi, dan layak digunakan untuk demo maupun operasional sederhana.
+
+---
+
+## Prioritas 1 — Stabilkan Project
+
+* [x] Jalankan project secara lokal.
+* [x] Pastikan `composer install` berjalan tanpa error.
+* [x] Pastikan `npm install` berjalan tanpa error.
+* [x] Pastikan `php artisan key:generate` berhasil.
+* [x] Pastikan `php artisan migrate:fresh --seed` berhasil.
+* [x] Pastikan `npm run build` berhasil.
+* [x] Pastikan `php artisan serve` dapat membuka aplikasi.
+
+---
+
+## Prioritas 2 — Audit Struktur Laravel
+
+* [x] Cek seluruh route di `routes/web.php`.
+* [x] Rapikan route agar mudah dibaca.
+* [x] Pastikan tidak ada route duplikat.
+* [x] Pastikan semua controller yang dipanggil route benar-benar ada.
+* [x] Pastikan semua view Blade yang dipanggil controller tersedia.
+* [x] Pastikan semua model memiliki relasi yang sesuai.
+
+---
+
+## Prioritas 3 — Audit Database
+
+* [x] Cek semua file migration.
+* [x] Cocokkan migration dengan model.
+* [x] Cocokkan migration dengan controller.
+* [x] Cocokkan migration dengan file SQL jika ada.
+* [x] Pastikan tabel inti tersedia:
+
+  * `users`
+  * `books`
+  * `book_copies`
+  * `members`
+  * `borrowing_transactions`
+  * `fines`
+  * `procurements`
+  * `settings`
+* [x] Pastikan foreign key tidak error saat migrate.
+* [x] Pastikan seeder menghasilkan data demo yang aman.
+
+---
+
+## Prioritas 4 — Auth dan Keamanan Dasar
+
+* [x] Cek login admin/operator.
+* [x] Nonaktifkan register publik jika aplikasi untuk internal sekolah.
+* [x] Pastikan halaman penting hanya bisa diakses setelah login.
+* [x] Tambahkan middleware auth pada menu utama.
+* [x] Pastikan logout berjalan benar.
+* [x] Pastikan password menggunakan hash Laravel.
+
+---
+
+## Prioritas 5 — Modul Buku
+
+* [x] Cek halaman daftar buku.
+* [x] Cek tambah buku.
+* [x] Cek edit buku.
+* [x] Cek hapus buku.
+* [x] Cek detail buku.
+* [x] Pastikan validasi form buku berjalan.
+* [x] Pastikan pencarian buku berjalan.
+* [x] Pastikan import buku CSV/XLSX berjalan atau diperbaiki.
+* [x] Pastikan data buku tidak menyebabkan error jika field kosong.
+
+---
+
+## Prioritas 6 — Modul Eksemplar Buku
+
+* [x] Cek daftar eksemplar buku.
+* [x] Cek tambah eksemplar.
+* [x] Cek edit eksemplar.
+* [x] Cek hapus eksemplar.
+* [x] Pastikan status eksemplar jelas:
+
+  * tersedia
+  * dipinjam
+  * rusak
+  * hilang
+* [x] Pastikan eksemplar berubah status saat dipinjam.
+* [x] Pastikan eksemplar kembali tersedia setelah dikembalikan.
+
+---
+
+## Prioritas 7 — Modul Anggota
+
+* [x] Cek daftar anggota.
+* [x] Cek tambah anggota.
+* [x] Cek edit anggota.
+* [x] Cek hapus anggota.
+* [x] Pastikan validasi data anggota berjalan.
+* [x] Pastikan pencarian anggota berjalan.
+* [x] Pastikan anggota bisa digunakan dalam transaksi peminjaman.
+
+---
+
+## Prioritas 8 — Modul Peminjaman
+
+* [x] Cek halaman transaksi peminjaman.
+* [x] Pastikan hanya buku tersedia yang bisa dipinjam.
+* [x] Pastikan anggota valid bisa meminjam.
+* [x] Pastikan tanggal pinjam dan tanggal jatuh tempo tersimpan.
+* [x] Pastikan status transaksi menjadi aktif/dipinjam.
+* [x] Pastikan stok/status eksemplar berubah setelah peminjaman.
+* [x] Tambahkan validasi agar buku yang sedang dipinjam tidak bisa dipinjam ulang.
+
+---
+
+## Prioritas 9 — Modul Pengembalian
+
+* [x] Cek halaman pengembalian buku.
+* [x] Pastikan transaksi aktif bisa dikembalikan.
+* [x] Pastikan tanggal kembali tersimpan.
+* [x] Pastikan status transaksi berubah menjadi selesai/dikembalikan.
+* [x] Pastikan eksemplar kembali tersedia.
+* [x] Pastikan denda otomatis dibuat jika terlambat.
+* [x] Pastikan denda tidak dibuat jika tidak terlambat.
+
+---
+
+## Prioritas 10 — Modul Denda
+
+* [x] Cek perhitungan denda keterlambatan.
+* [x] Pastikan nominal denda mengambil dari pengaturan.
+* [x] Pastikan denda bisa ditandai lunas.
+* [x] Pastikan denda tampil di detail transaksi.
+* [x] Pastikan laporan denda dapat dibaca dengan jelas.
+
+---
+
+## Prioritas 11 — Dashboard dan Laporan
+
+* [x] Cek dashboard utama.
+* [x] Tampilkan statistik penting:
+
+  * jumlah buku
+  * jumlah eksemplar
+  * jumlah anggota
+  * buku sedang dipinjam
+  * buku terlambat
+  * total denda belum lunas
+* [x] Buat laporan buku dipinjam.
+* [x] Buat laporan buku terlambat.
+* [x] Buat laporan anggota aktif.
+* [x] Buat laporan denda.
+* [x] Pastikan laporan bisa difilter berdasarkan tanggal.
+
+---
+
+## Prioritas 12 — UI/UX
+
+* [x] Rapikan layout utama.
+* [x] Rapikan sidebar/menu navigasi.
+* [x] Rapikan tabel data.
+* [x] Tambahkan tombol aksi yang konsisten.
+* [x] Tambahkan pesan sukses/gagal.
+* [x] Tambahkan konfirmasi sebelum hapus data.
+* [x] Pastikan tampilan nyaman di layar laptop.
+* [x] Pastikan halaman error tidak terlihat mentah.
+
+---
+
+## Prioritas 13 — Testing Manual
+
+* [ ] Test login.
+* [ ] Test tambah buku.
+* [ ] Test tambah anggota.
+* [ ] Test tambah eksemplar.
+* [ ] Test peminjaman.
+* [ ] Test pengembalian tepat waktu.
+* [ ] Test pengembalian terlambat.
+* [ ] Test denda.
+* [ ] Test laporan.
+* [ ] Test logout.
+
+---
+
+## Prioritas 14 — Dokumentasi
+
+* [ ] Perbarui `README.md`.
+* [ ] Tambahkan cara instalasi.
+* [ ] Tambahkan akun demo.
+* [ ] Tambahkan fitur yang sudah tersedia.
+* [ ] Tambahkan fitur yang belum tersedia.
+* [ ] Tambahkan struktur database singkat.
+* [ ] Tambahkan screenshot jika diperlukan.
+
+---
+
+## Batasan Pengerjaan
+
+Jangan menambah fitur besar sebelum fitur inti stabil.
+
+Fokus utama:
+
+1. aplikasi bisa berjalan,
+2. database aman,
+3. transaksi peminjaman dan pengembalian benar,
+4. laporan dasar tersedia,
+5. tampilan cukup rapi untuk demo.
+
+---
+
+## Catatan untuk Codex Agent
+
+Kerjakan secara bertahap.
+Setiap perubahan harus menjaga aplikasi tetap bisa dijalankan.
+Jangan menghapus fitur yang sudah ada tanpa alasan jelas.
+Jika menemukan error besar, perbaiki dari penyebab utama, bukan hanya menyembunyikan error.

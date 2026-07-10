@@ -52,10 +52,11 @@
 
     <section class="card shadow-sm">
       <div class="card-header bg-white">
-        <div class="input-group">
+        <form class="input-group" method="GET" action="{{ route('members.index') }}">
           <span class="input-group-text">Cari</span>
-          <input class="form-control" type="search" placeholder="Nama, NIS, kode anggota">
-        </div>
+          <input class="form-control" type="search" name="q" placeholder="Nama, NIS, kode anggota" value="{{ request('q') }}">
+          <button class="btn btn-outline-secondary" type="submit">Cari</button>
+        </form>
       </div>
 
       <div class="table-responsive">
@@ -77,7 +78,7 @@
                 <td class="mono">{{ $member->nis_nisn ?? $member->nip ?? '-' }}</td>
                 <td>
                   <strong>{{ $member->name }}</strong>
-                  <small>{{ $member->member_type_id ? 'Tipe #' . $member->member_type_id : 'Anggota' }}</small>
+                  <small>{{ $member->memberType?->name ?? 'Anggota' }}</small>
                 </td>
                 <td>{{ $member->phone ?? $member->email ?? '-' }}</td>
                 <td><span class="badge text-bg-{{ ($member->is_active ?? true) ? 'success' : 'secondary' }}">{{ ($member->is_active ?? true) ? 'Aktif' : 'Nonaktif' }}</span></td>
@@ -85,9 +86,9 @@
                   <div class="btn-group btn-group-sm">
                     <a class="btn btn-outline-primary" href="{{ route('members.show', $member->id) }}">Detail</a>
                     <a class="btn btn-outline-secondary" href="{{ route('members.edit', $member->id) }}">Edit</a>
-                    <form method="post" action="{{ route('members.destroy', $member->id) }}">
+                    <form method="post" action="{{ route('members.destroy', $member->id) }}" data-confirm="Hapus anggota ini?">
                       @csrf @method('DELETE')
-                      <button class="btn btn-outline-danger rounded-start-0" type="submit" onclick="return confirm('Hapus anggota ini?')">Hapus</button>
+                      <button class="btn btn-outline-danger rounded-start-0" type="submit">Hapus</button>
                     </form>
                   </div>
                 </td>

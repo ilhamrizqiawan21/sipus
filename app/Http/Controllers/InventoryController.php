@@ -15,10 +15,8 @@ class InventoryController extends Controller
     {
         $totalBooks = Book::count();
         $totalCopies = BookCopy::count();
-        $availableCopies = BookCopy::whereHas('status', fn ($status) => $status->where('is_available', true))
-            ->orWhereNull('status_id')
-            ->count();
-        $borrowedCopies = BookCopy::whereHas('status', fn ($status) => $status->where('name', 'Borrowed'))->count();
+        $availableCopies = BookCopy::whereHas('status', fn ($status) => $status->where('code', 'available'))->count();
+        $borrowedCopies = BookCopy::whereHas('status', fn ($status) => $status->where('code', 'borrowed'))->count();
 
         $booksByCondition = DB::table('book_copies')
             ->join('book_conditions', 'book_copies.condition_id', '=', 'book_conditions.id')
