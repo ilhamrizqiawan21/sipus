@@ -79,7 +79,7 @@ Selain sidebar, ada juga:
 1. Clone repositori ke mesin lokal:
 
 ```bash
-git clone <repository-url> sipus
+git clone https://github.com/ilhamrizqiawan21/sipus.git
 cd sipus
 ```
 
