@@ -28,8 +28,8 @@ Tandai `[x]` setelah kriteria selesai diverifikasi. Tandai `[~]` bila sedang dik
 
 - [x] Tahap 0 — Ruang lingkup dan keputusan dasar.
 - [x] Tahap 1 — Setup project, environment, Laravel, Vue, Inertia, dan TypeScript.
-- [~] Tahap 2 — Database, migration, model, dan relasi. Migration sudah dibuat; verifikasi pada database SIPUS menunggu database kosong khusus SIPUS karena database aktif berisi schema aplikasi lama.
-- [ ] Tahap 3 — Autentikasi, role, dan hak akses.
+- [x] Tahap 2 — Database, migration, model, dan relasi. Migration sudah dijalankan pada database SIPUS dan seed berhasil.
+- [x] Tahap 3 — Autentikasi, role, dan hak akses.
 - [ ] Tahap 4 — Layout dan komponen UI dasar.
 - [ ] Tahap 5 — Master data dasar.
 - [ ] Tahap 6 — Anggota, guru, siswa, dan import XLSX.
@@ -167,6 +167,20 @@ Memastikan setiap pengguna hanya dapat mengakses fitur yang sesuai.
 ### Selesai jika
 
 Pengujian akses membuktikan setiap role hanya melihat menu dan aksi yang diizinkan.
+
+### Checklist Tahap 3
+
+- [x] Halaman login berbasis username.
+- [x] Logout dengan invalidasi session dan regenerasi CSRF token.
+- [x] Throttle percobaan login.
+- [x] Middleware autentikasi dan alias middleware role.
+- [x] Pembatasan akses route admin.
+- [x] Redirect dashboard setelah login.
+- [x] Halaman profil, ubah username, ubah password, dan upload foto.
+- [x] Shared props user dan flash message Inertia.
+- [x] Feature test login, user nonaktif, route admin, dashboard, dan profile.
+- [x] Reset password admin melalui command `php artisan sipus:reset-admin-password`.
+- [x] Pencatatan login, logout, perubahan profil, dan reset password admin.
 
 ## Tahap 4 — Layout dan Komponen UI Dasar
 
