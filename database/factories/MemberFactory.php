@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Classroom;
 use App\Models\Member;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -17,8 +18,6 @@ class MemberFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            //
-        ];
+        return ['nomor_anggota' => fake()->unique()->numerify('SIPUS-#####'), 'jenis_anggota' => 'siswa', 'nama' => fake()->name(), 'nis_nip' => fake()->unique()->numerify('##########'), 'kelas_id' => Classroom::factory(), 'jenis_kelamin' => fake()->randomElement(['L', 'P']), 'tanggal_daftar' => now()->toDateString(), 'status' => true];
     }
 }

@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import AuthenticatedLayout from '../../Layouts/AuthenticatedLayout.vue'
+import AppLayout from '../../Layouts/AppLayout.vue'
+import FormField from '../../components/FormField.vue'
+import PageHeader from '../../components/PageHeader.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
 
-defineOptions({ layout: AuthenticatedLayout })
+defineOptions({ layout: AppLayout })
 
 const page = usePage()
 const user = page.props.auth?.user
@@ -31,24 +33,16 @@ function selectPhoto(event: Event) {
 
 <template>
     <div class="mx-auto max-w-2xl space-y-6">
-        <div>
-            <p class="text-sm font-medium text-emerald-700">Akun</p>
-            <h1 class="mt-1 text-3xl font-bold tracking-tight text-slate-950">Profil saya</h1>
-            <p class="mt-2 text-sm text-slate-500">Perbarui informasi akun dan password Anda.</p>
-        </div>
+        <PageHeader eyebrow="Akun" title="Profil saya" description="Perbarui informasi akun dan password Anda." />
 
         <form class="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" @submit.prevent="submit">
-            <div>
-                <label for="nama" class="mb-2 block text-sm font-medium text-slate-700">Nama</label>
+            <FormField name="nama" label="Nama" :error="form.errors.nama" required>
                 <input id="nama" v-model="form.nama" type="text" required class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100">
-                <p v-if="form.errors.nama" class="mt-2 text-sm text-rose-600">{{ form.errors.nama }}</p>
-            </div>
+            </FormField>
 
-            <div>
-                <label for="username" class="mb-2 block text-sm font-medium text-slate-700">Username</label>
+            <FormField name="username" label="Username" :error="form.errors.username" required>
                 <input id="username" v-model="form.username" type="text" required class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100">
-                <p v-if="form.errors.username" class="mt-2 text-sm text-rose-600">{{ form.errors.username }}</p>
-            </div>
+            </FormField>
 
             <div class="grid gap-5 sm:grid-cols-2">
                 <div>

@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Book;
+use App\Models\BookType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,8 +18,6 @@ class BookFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            //
-        ];
+        return ['kode_buku' => fake()->unique()->bothify('BK-#####'), 'judul' => fake()->sentence(4), 'jenis_buku_id' => BookType::factory(), 'tahun_terbit' => fake()->numberBetween(2000, 2026), 'deskripsi' => fake()->paragraph()];
     }
 }

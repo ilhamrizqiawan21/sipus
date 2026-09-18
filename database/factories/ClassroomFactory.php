@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Classroom;
+use App\Models\SchoolYear;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,8 +18,6 @@ class ClassroomFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            //
-        ];
+        return ['nama' => fake()->unique()->bothify('Kelas ##'), 'tingkat' => fake()->randomElement(['VII', 'VIII', 'IX']), 'school_year_id' => SchoolYear::factory(), 'wali_nama' => fake()->name(), 'aktif' => true];
     }
 }

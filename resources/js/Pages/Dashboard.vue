@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import AuthenticatedLayout from '../Layouts/AuthenticatedLayout.vue'
+import AppLayout from '../Layouts/AppLayout.vue'
 import { Link, usePage } from '@inertiajs/vue3'
 
-defineOptions({ layout: AuthenticatedLayout })
+defineOptions({ layout: AppLayout })
 
 defineProps<{
     stats: {

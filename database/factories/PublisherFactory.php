@@ -17,8 +17,6 @@ class PublisherFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            //
-        ];
+        return ['nama' => fake()->unique()->company(), 'alamat' => fake()->address(), 'telepon' => fake()->phoneNumber(), 'email' => fake()->safeEmail(), 'website' => fake()->url(), 'catatan' => fake()->sentence()];
     }
 }

@@ -30,10 +30,10 @@ Tandai `[x]` setelah kriteria selesai diverifikasi. Tandai `[~]` bila sedang dik
 - [x] Tahap 1 — Setup project, environment, Laravel, Vue, Inertia, dan TypeScript.
 - [x] Tahap 2 — Database, migration, model, dan relasi. Migration sudah dijalankan pada database SIPUS dan seed berhasil.
 - [x] Tahap 3 — Autentikasi, role, dan hak akses.
-- [ ] Tahap 4 — Layout dan komponen UI dasar.
-- [ ] Tahap 5 — Master data dasar.
-- [ ] Tahap 6 — Anggota, guru, siswa, dan import XLSX.
-- [ ] Tahap 7 — Buku, eksemplar, dan inventaris.
+- [x] Tahap 4 — Layout dan komponen UI dasar.
+- [x] Tahap 5 — Master data dasar.
+- [x] Tahap 6 — Anggota, guru, siswa, dan import XLSX.
+- [x] Tahap 7 — Buku, eksemplar, dan inventaris.
 - [ ] Tahap 8 — Kunjungan perpustakaan.
 - [ ] Tahap 9 — Peminjaman dan pengembalian.
 - [ ] Tahap 10 — Denda dan aturan bisnis.
@@ -206,6 +206,19 @@ Membangun kerangka tampilan yang dipakai seluruh modul.
 
 Layout nyaman digunakan pada desktop, tablet, dan ponsel.
 
+### Checklist Tahap 4
+
+- [x] Layout utama memiliki sidebar, headbar, dan area konten.
+- [x] Sidebar memiliki hamburger button, overlay, dan perilaku responsif.
+- [x] Menu sidebar menyesuaikan role Admin, Guru, dan Siswa.
+- [x] Breadcrumb halaman dan identitas pengguna tersedia di headbar.
+- [x] Komponen tombol, `StatusBadge`, `ConfirmDialog`, dan `AppNotice` tersedia.
+- [x] Komponen `DataTable` dan `AppPagination` tersedia untuk modul CRUD.
+- [x] Komponen `FormField` dan `FilterBar` tersedia untuk form, pencarian, dan filter.
+- [x] Komponen `BusyState`, `EmptyState`, dan `ErrorState` tersedia.
+- [x] Warna, tipografi, jarak, breakpoint, dan state hover/focus menggunakan Tailwind.
+- [x] Build frontend dan seluruh feature test yang tersedia berhasil dijalankan.
+
 ## Tahap 5 — Master Data Dasar
 
 ### Urutan
@@ -231,6 +244,19 @@ Master data tersedia untuk dipakai oleh modul buku, anggota, dan laporan.
 ### Selesai jika
 
 Admin dapat mengelola seluruh master data tanpa memasukkan data langsung melalui database.
+
+### Checklist Tahap 5
+
+- [x] CRUD Tahun Ajaran dengan semester, periode tanggal, status aktif, pencarian, dan pagination.
+- [x] CRUD Kelas dengan relasi Tahun Ajaran, wali kelas, status aktif, pencarian, dan pagination.
+- [x] CRUD Jenis Buku dengan kode, deskripsi, status aktif, pencarian, dan pagination.
+- [x] CRUD Penerbit dengan informasi kontak dan jumlah buku.
+- [x] CRUD Pengarang dengan biografi, catatan, dan jumlah buku.
+- [x] Tersedia halaman index, tambah, detail, edit, dan hapus untuk setiap master data.
+- [x] Validasi field wajib, format input, dan keunikan data diterapkan melalui Form Request.
+- [x] Penghapusan dicegah bila data masih dipakai oleh kelas, anggota, atau buku terkait.
+- [x] Seluruh route master data dibatasi middleware role `admin`.
+- [x] Feature test master data dan validasi akses berhasil: 12 test, 41 assertion.
 
 ## Tahap 6 — Anggota, Guru, Siswa, dan Import XLSX
 
@@ -260,6 +286,20 @@ Menyiapkan pengguna dan anggota yang dapat melakukan transaksi.
 
 Admin dapat menambah anggota manual maupun melalui XLSX, dan anggota dapat login sesuai role.
 
+### Checklist Tahap 6
+
+- [x] CRUD anggota tersedia untuk siswa dan guru.
+- [x] Anggota dapat dihubungkan ke kelas dan akun login.
+- [x] Role akun otomatis mengikuti jenis anggota: `siswa` atau `guru`.
+- [x] Status aktif/nonaktif anggota dan akun dikelola dari form anggota.
+- [x] Validasi nomor anggota, NIS/NIP, username, email, password, dan relasi kelas.
+- [x] Download template XLSX anggota tersedia.
+- [x] Upload XLSX divalidasi berdasarkan tipe file dan ukuran maksimal.
+- [x] Preview import menampilkan baris valid dan pesan kesalahan setiap baris.
+- [x] Konfirmasi import hanya menyimpan baris yang valid dalam transaksi database.
+- [x] Penghapusan anggota dicegah jika sudah memiliki histori kunjungan atau peminjaman.
+- [x] Feature test hak akses, CRUD akun, parsing, preview, dan konfirmasi import berhasil.
+
 ## Tahap 7 — Buku, Eksemplar, dan Inventaris
 
 ### Tujuan
@@ -286,6 +326,19 @@ Katalog dan stok fisik perpustakaan dapat dikelola secara terpisah dan akurat.
 ### Selesai jika
 
 Admin dapat mengetahui jumlah judul, jumlah eksemplar, lokasi, kondisi, dan status setiap buku.
+
+### Checklist Tahap 7
+
+- [x] CRUD judul buku dengan kode, metadata, jenis buku, penerbit, dan pengarang.
+- [x] Relasi buku dengan jenis, penerbit, dan banyak pengarang tersedia.
+- [x] Upload cover buku tervalidasi dan disimpan melalui disk publik Laravel.
+- [x] CRUD eksemplar buku dengan kode inventaris unik.
+- [x] Lokasi rak, kondisi, status, tanggal masuk, dan harga perolehan dikelola.
+- [x] Ringkasan jumlah eksemplar dan stok tersedia ditampilkan pada katalog/detail buku.
+- [x] CRUD inventaris non-buku dengan jumlah, satuan, lokasi, kondisi, dan status.
+- [x] Penghapusan buku dan eksemplar dicegah jika masih memiliki histori peminjaman.
+- [x] Seluruh route buku, eksemplar, dan inventaris dibatasi middleware role `admin`.
+- [x] Feature test buku, cover, eksemplar, inventaris, penghapusan, dan hak akses berhasil.
 
 ## Tahap 8 — Kunjungan Perpustakaan
 

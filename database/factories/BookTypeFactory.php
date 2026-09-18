@@ -17,8 +17,6 @@ class BookTypeFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            //
-        ];
+        return ['nama' => fake()->unique()->words(2, true), 'kode' => fake()->unique()->lexify('BK-???'), 'deskripsi' => fake()->sentence(), 'aktif' => true];
     }
 }
