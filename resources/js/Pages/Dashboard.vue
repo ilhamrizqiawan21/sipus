@@ -4,47 +4,34 @@ import { Link, usePage } from '@inertiajs/vue3'
 
 defineOptions({ layout: AppLayout })
 
-defineProps<{
-    stats: {
-        activeLoans: number
-        completedLoans: number
-        overdueLoans: number
-        role: string
-    }
+type Activity = { id: number; action: string; description: string | null; created_at: string; user?: { nama: string } }
+type Loan = { id: number; kode_transaksi: string; tanggal_pinjam: string; batas_kembali: string; status: string }
+
+const props = defineProps<{
+    role: string
+    admin?: { collection: { titles: number; copies: number; available: number; borrowed: number; damaged: number }; loans: { today: number; week: number; month: number; active: number; overdue: number }; trend: { labels: string[]; loans: number[]; visits: number[] }; recentActivities: Activity[] }
+    member?: { activeLoans: number; overdueLoans: number; completedLoans: number; visitsThisMonth: number; unpaidFines: string | number; recentLoans: Loan[] }
 }>()
 
 const page = usePage()
+const userName = () => page.props.auth?.user?.nama ?? 'Pengguna'
+const maxTrend = (values: number[]) => Math.max(...values, 1)
+const formatMoney = (value: string | number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(value))
+const statusLabel = (status: string) => ({ dipinjam: 'Dipinjam', sebagian_kembali: 'Sebagian kembali', terlambat: 'Terlambat', selesai: 'Selesai' }[status] ?? status)
 </script>
 
 <template>
     <div class="space-y-8">
-        <section class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div>
-                <p class="text-sm font-medium text-emerald-700">Dashboard</p>
-                <h1 class="mt-1 text-3xl font-bold tracking-tight text-slate-950">Selamat datang, {{ page.props.auth?.user?.nama }}</h1>
-                <p class="mt-2 text-sm text-slate-500">Berikut ringkasan aktivitas perpustakaan Anda.</p>
-            </div>
-            <Link href="/profil" class="inline-flex w-fit items-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700">Kelola profil</Link>
-        </section>
+        <section class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p class="text-sm font-medium text-emerald-700">Dashboard</p><h1 class="mt-1 text-3xl font-bold tracking-tight text-slate-950">Selamat datang, {{ userName() }}</h1><p class="mt-2 text-sm text-slate-500">Ringkasan aktivitas perpustakaan hari ini.</p></div><div class="flex flex-wrap gap-3"><Link href="/buku" class="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-emerald-300 hover:text-emerald-700">Cari buku</Link><Link v-if="role === 'admin'" href="/anggota/create" class="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Tambah anggota</Link></div></section>
 
-        <section class="grid gap-4 sm:grid-cols-3">
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p class="text-sm text-slate-500">Peminjaman aktif</p>
-                <p class="mt-3 text-3xl font-bold text-slate-950">{{ stats.activeLoans }}</p>
-            </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p class="text-sm text-slate-500">Peminjaman selesai</p>
-                <p class="mt-3 text-3xl font-bold text-slate-950">{{ stats.completedLoans }}</p>
-            </article>
-            <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p class="text-sm text-slate-500">Terlambat</p>
-                <p class="mt-3 text-3xl font-bold text-rose-600">{{ stats.overdueLoans }}</p>
-            </article>
-        </section>
+        <template v-if="role === 'admin' && admin">
+            <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><article v-for="card in [{ label: 'Judul buku', value: admin.collection.titles, note: `${admin.collection.copies} eksemplar`, color: 'text-slate-950' }, { label: 'Buku tersedia', value: admin.collection.available, note: `${admin.collection.borrowed} sedang dipinjam`, color: 'text-emerald-700' }, { label: 'Peminjaman aktif', value: admin.loans.active, note: `${admin.loans.overdue} terlambat`, color: 'text-amber-600' }, { label: 'Kondisi bermasalah', value: admin.collection.damaged, note: 'rusak atau hilang', color: 'text-rose-600' }]" :key="card.label" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm text-slate-500">{{ card.label }}</p><p class="mt-3 text-3xl font-bold" :class="card.color">{{ card.value }}</p><p class="mt-2 text-xs text-slate-400">{{ card.note }}</p></article></section>
 
-        <section class="rounded-2xl border border-emerald-100 bg-emerald-50 p-6">
-            <p class="text-sm font-semibold text-emerald-900">Akses Anda</p>
-            <p class="mt-2 text-sm text-emerald-800">Role aktif: <span class="font-bold uppercase">{{ stats.role }}</span>. Modul perpustakaan akan tersedia sesuai hak akses role ini.</p>
-        </section>
+            <section class="grid gap-6 xl:grid-cols-[1.4fr_1fr]"><article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><div class="flex items-start justify-between"><div><h2 class="font-bold text-slate-950">Aktivitas 7 hari terakhir</h2><p class="mt-1 text-sm text-slate-500">Peminjaman dan kunjungan harian.</p></div><span class="rounded-lg bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Live</span></div><div class="mt-6 flex h-52 items-end gap-2 sm:gap-4"><div v-for="(label, index) in admin.trend.labels" :key="label" class="flex h-full flex-1 flex-col items-center justify-end gap-2"><div class="flex h-full w-full items-end justify-center gap-1"><div class="w-2 rounded-t bg-emerald-500 sm:w-3" :style="{ height: `${(admin.trend.loans[index] / maxTrend(admin.trend.loans)) * 100}%`, minHeight: admin.trend.loans[index] ? '8px' : '2px' }" /><div class="w-2 rounded-t bg-sky-400 sm:w-3" :style="{ height: `${(admin.trend.visits[index] / maxTrend(admin.trend.visits)) * 100}%`, minHeight: admin.trend.visits[index] ? '8px' : '2px' }" /></div><span class="text-[10px] text-slate-400">{{ label }}</span></div></div><div class="mt-4 flex gap-5 text-xs text-slate-500"><span><i class="mr-1 inline-block size-2 rounded-full bg-emerald-500" />Peminjaman</span><span><i class="mr-1 inline-block size-2 rounded-full bg-sky-400" />Kunjungan</span></div></article><article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="font-bold text-slate-950">Ringkasan periode</h2><div class="mt-5 space-y-4"><div class="flex items-center justify-between border-b border-slate-100 pb-4"><span class="text-sm text-slate-500">Hari ini</span><strong class="text-slate-950">{{ admin.loans.today }} peminjaman</strong></div><div class="flex items-center justify-between border-b border-slate-100 pb-4"><span class="text-sm text-slate-500">Minggu ini</span><strong class="text-slate-950">{{ admin.loans.week }} peminjaman</strong></div><div class="flex items-center justify-between"><span class="text-sm text-slate-500">Bulan ini</span><strong class="text-slate-950">{{ admin.loans.month }} peminjaman</strong></div></div><div class="mt-6 flex gap-3"><Link href="/buku/create" class="flex-1 rounded-xl bg-slate-900 px-3 py-2.5 text-center text-xs font-semibold text-white hover:bg-slate-700">Tambah buku</Link><Link href="/anggota" class="flex-1 rounded-xl border border-slate-300 px-3 py-2.5 text-center text-xs font-semibold text-slate-700 hover:bg-slate-50">Lihat anggota</Link></div></article></section>
+
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="font-bold text-slate-950">Aktivitas terbaru</h2><p class="mt-1 text-sm text-slate-500">Perubahan terakhir yang tercatat di sistem.</p><div v-if="admin.recentActivities.length" class="mt-5 divide-y divide-slate-100"><div v-for="activity in admin.recentActivities" :key="activity.id" class="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between"><div><p class="text-sm font-medium text-slate-800">{{ activity.description || activity.action }}</p><p class="text-xs text-slate-400">{{ activity.user?.nama || 'Sistem' }} · {{ activity.action }}</p></div><time class="text-xs text-slate-400">{{ new Date(activity.created_at).toLocaleString('id-ID') }}</time></div></div><p v-else class="mt-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Belum ada aktivitas yang tercatat.</p></section>
+        </template>
+
+        <template v-else-if="member"><section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><article v-for="card in [{ label: 'Peminjaman aktif', value: member.activeLoans, color: 'text-slate-950' }, { label: 'Terlambat', value: member.overdueLoans, color: 'text-rose-600' }, { label: 'Kunjungan bulan ini', value: member.visitsThisMonth, color: 'text-sky-600' }, { label: 'Denda belum lunas', value: formatMoney(member.unpaidFines), color: 'text-amber-600' }]" :key="card.label" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm text-slate-500">{{ card.label }}</p><p class="mt-3 text-2xl font-bold" :class="card.color">{{ card.value }}</p></article></section><section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="font-bold text-slate-950">Riwayat peminjaman</h2><div v-if="member.recentLoans.length" class="mt-4 divide-y divide-slate-100"><div v-for="loan in member.recentLoans" :key="loan.id" class="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"><div><p class="font-semibold text-slate-800">{{ loan.kode_transaksi }}</p><p class="text-xs text-slate-500">Pinjam {{ loan.tanggal_pinjam }} · Batas kembali {{ loan.batas_kembali }}</p></div><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{{ statusLabel(loan.status) }}</span></div></div><p v-else class="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Belum ada riwayat peminjaman.</p></section></template>
     </div>
 </template>

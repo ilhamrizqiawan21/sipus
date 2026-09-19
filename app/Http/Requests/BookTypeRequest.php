@@ -7,6 +7,14 @@ use Illuminate\Validation\Rule;
 
 class BookTypeRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'nama' => trim((string) $this->input('nama')),
+            'kode' => $this->filled('kode') ? strtoupper(trim((string) $this->input('kode'))) : null,
+        ]);
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */

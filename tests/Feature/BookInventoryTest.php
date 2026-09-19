@@ -8,10 +8,13 @@ use App\Models\BookCopy;
 use App\Models\BookType;
 use App\Models\Publisher;
 use App\Models\User;
+use App\Services\BookSpreadsheetService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
+use ZipArchive;
 
 class BookInventoryTest extends TestCase
 {
@@ -64,5 +67,40 @@ class BookInventoryTest extends TestCase
 
         $this->actingAs($user)->get('/buku')->assertForbidden();
         $this->actingAs($user)->get('/inventaris')->assertForbidden();
+    }
+
+    public function test_books_can_be_imported_from_xlsx_using_active_book_type(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->create(['role' => 'admin']);
+        $type = BookType::factory()->create(['nama' => 'Fiksi', 'kode' => 'FIK', 'aktif' => true]);
+        $publisher = Publisher::factory()->create(['nama' => 'Penerbit Demo']);
+        $author = Author::factory()->create(['nama' => 'Penulis Demo']);
+        $file = $this->bookXlsxFile('BK-IMPORT-001', 'Buku Import', 'FIK', $publisher->nama, $author->nama);
+
+        $service = app(BookSpreadsheetService::class);
+        $rows = $service->validateRows($service->parse($file));
+        $this->assertTrue($rows[0]['_valid']);
+        $this->actingAs($admin)->withHeader('X-Inertia', 'true')->post(route('books.import.preview'), ['file' => $file])->assertOk();
+
+        $token = (string) Str::uuid();
+        Storage::disk('local')->put("book-imports/{$token}.json", json_encode($rows, JSON_THROW_ON_ERROR));
+        $this->actingAs($admin)->post(route('books.import.confirm'), ['token' => $token])->assertRedirect(route('books.index'));
+        $this->assertDatabaseHas('books', ['kode_buku' => 'BK-IMPORT-001', 'jenis_buku_id' => $type->id, 'penerbit_id' => $publisher->id]);
+    }
+
+    private function bookXlsxFile(string $code, string $title, string $type, string $publisher, string $author): UploadedFile
+    {
+        $path = app(BookSpreadsheetService::class)->templatePath();
+        $zip = new ZipArchive;
+        $zip->open($path);
+        $headers = ['kode_buku', 'judul', 'jenis_buku', 'penerbit', 'pengarang', 'tahun_terbit', 'deskripsi'];
+        $headerCells = collect($headers)->map(fn ($header, $index) => '<c r="'.chr(65 + $index).'1" t="inlineStr"><is><t>'.$header.'</t></is></c>')->implode('');
+        $values = [$code, $title, $type, $publisher, $author, '2026', 'Buku hasil import'];
+        $valueCells = collect($values)->map(fn ($value, $index) => '<c r="'.chr(65 + $index).'2" t="inlineStr"><is><t>'.$value.'</t></is></c>')->implode('');
+        $zip->addFromString('xl/worksheets/sheet1.xml', '<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1">'.$headerCells.'</row><row r="2">'.$valueCells.'</row></sheetData></worksheet>');
+        $zip->close();
+
+        return new UploadedFile($path, 'buku.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
     }
 }

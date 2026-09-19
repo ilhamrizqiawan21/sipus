@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Book;
 use App\Models\BookType;
 use App\Models\Classroom;
 use App\Models\Publisher;
@@ -35,6 +36,24 @@ class MasterDataTest extends TestCase
         $this->assertFalse($updated?->is_aktif);
     }
 
+    public function test_only_one_school_year_can_be_active(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $activeYear = SchoolYear::factory()->create(['is_aktif' => true]);
+
+        $this->actingAs($admin)->post('/school-years', ['nama' => '2027/2028', 'semester' => '1', 'mulai' => '2027-07-01', 'selesai' => '2027-12-31', 'is_aktif' => true])->assertRedirect(route('school-years.index'));
+
+        $this->assertFalse($activeYear->fresh()->is_aktif);
+        $this->assertTrue(SchoolYear::query()->where('nama', '2027/2028')->firstOrFail()->is_aktif);
+    }
+
+    public function test_admin_can_open_school_year_create_page(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->get(route('school-years.create'))->assertOk();
+    }
+
     public function test_admin_can_create_classroom_and_deletion_is_protected_when_used(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -54,5 +73,31 @@ class MasterDataTest extends TestCase
 
         $this->actingAs($admin)->post('/book-types', ['nama' => 'Fiksi'])->assertSessionHasErrors('nama');
         $this->actingAs($admin)->post('/publishers', ['nama' => 'Penerbit Utama'])->assertSessionHasErrors('nama');
+    }
+
+    public function test_book_type_is_normalized_and_can_be_filtered(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)->post('/book-types', ['nama' => '  Fiksi  ', 'kode' => ' fik '])->assertRedirect(route('book-types.index'));
+
+        $type = BookType::query()->where('nama', 'Fiksi')->firstOrFail();
+        $this->assertSame('FIK', $type->kode);
+        $this->actingAs($admin)->get('/book-types?status=active')->assertOk();
+        $this->actingAs($admin)->patch(route('book-types.update', $type), ['nama' => 'Fiksi', 'kode' => 'FIK', 'aktif' => false])->assertRedirect(route('book-types.index'));
+        $this->assertFalse($type->fresh()->aktif);
+    }
+
+    public function test_used_book_type_cannot_be_deleted_and_inactive_type_cannot_be_assigned(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $type = BookType::factory()->create(['aktif' => false]);
+
+        $this->actingAs($admin)->post('/buku', ['judul' => 'Buku Nonaktif', 'jenis_buku_id' => $type->id])->assertSessionHasErrors('jenis_buku_id');
+
+        $type->update(['aktif' => true]);
+        Book::factory()->create(['jenis_buku_id' => $type->id]);
+        $this->actingAs($admin)->delete(route('book-types.destroy', $type))->assertSessionHas('error');
+        $this->assertDatabaseHas('book_types', ['id' => $type->id]);
     }
 }

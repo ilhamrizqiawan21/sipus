@@ -16,7 +16,7 @@ class SchoolYearController extends Controller
         $search = $request->string('search')->trim()->toString();
         $items = SchoolYear::query()->when($search, fn ($query) => $query->where('nama', 'like', "%{$search}%"))->orderByDesc('mulai')->paginate(10)->withQueryString();
 
-        return Inertia::render('Master/Index', ['resource' => 'school-years', 'title' => 'Tahun Ajaran', 'description' => 'Kelola periode tahun ajaran dan semester aktif.', 'items' => $items, 'columns' => [['key' => 'nama', 'label' => 'Tahun Ajaran'], ['key' => 'semester', 'label' => 'Semester'], ['key' => 'mulai', 'label' => 'Mulai'], ['key' => 'selesai', 'label' => 'Selesai'], ['key' => 'is_aktif', 'label' => 'Status', 'type' => 'status']], 'createUrl' => route('school-years.create'), 'search' => $search]);
+        return Inertia::render('Master/Index', ['resource' => 'school-years', 'title' => 'Tahun Ajaran', 'description' => 'Kelola periode akademik dan tentukan satu semester aktif.', 'items' => $items, 'columns' => [['key' => 'nama', 'label' => 'Tahun Ajaran'], ['key' => 'semester', 'label' => 'Semester', 'type' => 'semester'], ['key' => 'mulai', 'label' => 'Mulai'], ['key' => 'selesai', 'label' => 'Selesai'], ['key' => 'is_aktif', 'label' => 'Status', 'type' => 'status']], 'createUrl' => route('school-years.create'), 'search' => $search]);
     }
 
     public function create(): Response
@@ -26,7 +26,8 @@ class SchoolYearController extends Controller
 
     public function store(SchoolYearRequest $request): RedirectResponse
     {
-        SchoolYear::create($request->validated());
+        $schoolYear = SchoolYear::create($request->validated());
+        $this->ensureSingleActive($schoolYear);
 
         return redirect()->route('school-years.index')->with('success', 'Tahun ajaran berhasil ditambahkan.');
     }
@@ -44,6 +45,7 @@ class SchoolYearController extends Controller
     public function update(SchoolYearRequest $request, SchoolYear $schoolYear): RedirectResponse
     {
         $schoolYear->update($request->validated());
+        $this->ensureSingleActive($schoolYear);
 
         return redirect()->route('school-years.index')->with('success', 'Tahun ajaran berhasil diperbarui.');
     }
@@ -61,5 +63,14 @@ class SchoolYearController extends Controller
     private function formProps(?SchoolYear $schoolYear): array
     {
         return ['resource' => 'school-years', 'title' => $schoolYear ? 'Edit Tahun Ajaran' : 'Tambah Tahun Ajaran', 'item' => $schoolYear, 'fields' => [['name' => 'nama', 'label' => 'Tahun ajaran', 'required' => true], ['name' => 'semester', 'label' => 'Semester', 'type' => 'select', 'required' => true, 'options' => [['value' => '1', 'label' => 'Semester 1'], ['value' => '2', 'label' => 'Semester 2']]], ['name' => 'mulai', 'label' => 'Tanggal mulai', 'type' => 'date', 'required' => true], ['name' => 'selesai', 'label' => 'Tanggal selesai', 'type' => 'date', 'required' => true], ['name' => 'is_aktif', 'label' => 'Tandai sebagai aktif', 'type' => 'checkbox']], 'action' => $schoolYear ? route('school-years.update', $schoolYear) : route('school-years.store'), 'method' => $schoolYear ? 'patch' : 'post', 'backUrl' => route('school-years.index')];
+    }
+
+    private function ensureSingleActive(SchoolYear $schoolYear): void
+    {
+        if (! $schoolYear->is_aktif) {
+            return;
+        }
+
+        SchoolYear::query()->whereKeyNot($schoolYear->id)->where('is_aktif', true)->update(['is_aktif' => false]);
     }
 }

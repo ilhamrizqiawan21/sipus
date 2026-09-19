@@ -14,9 +14,10 @@ class BookTypeController extends Controller
     public function index(Request $request): Response
     {
         $search = $request->string('search')->trim()->toString();
-        $items = BookType::query()->when($search, fn ($query) => $query->where('nama', 'like', "%{$search}%")->orWhere('kode', 'like', "%{$search}%"))->withCount('books')->latest('id')->paginate(10)->withQueryString();
+        $status = $request->string('status')->toString();
+        $items = BookType::query()->when($search, fn ($query) => $query->where(fn ($query) => $query->where('nama', 'like', "%{$search}%")->orWhere('kode', 'like', "%{$search}%")))->when(in_array($status, ['active', 'inactive'], true), fn ($query) => $query->where('aktif', $status === 'active'))->withCount('books')->latest('id')->paginate(10)->withQueryString();
 
-        return Inertia::render('Master/Index', ['resource' => 'book-types', 'title' => 'Jenis Buku', 'description' => 'Kelola kategori dan klasifikasi koleksi buku.', 'items' => $items, 'columns' => [['key' => 'nama', 'label' => 'Nama Jenis'], ['key' => 'kode', 'label' => 'Kode'], ['key' => 'books_count', 'label' => 'Jumlah Buku'], ['key' => 'aktif', 'label' => 'Status', 'type' => 'status']], 'createUrl' => route('book-types.create'), 'search' => $search]);
+        return Inertia::render('Master/Index', ['resource' => 'book-types', 'title' => 'Jenis Buku', 'description' => 'Kelola kategori dan klasifikasi koleksi buku.', 'items' => $items, 'columns' => [['key' => 'nama', 'label' => 'Nama Jenis'], ['key' => 'kode', 'label' => 'Kode'], ['key' => 'books_count', 'label' => 'Jumlah Buku'], ['key' => 'aktif', 'label' => 'Status', 'type' => 'status']], 'createUrl' => route('book-types.create'), 'search' => $search, 'filters' => ['status' => $status]]);
     }
 
     public function create(): Response
@@ -33,7 +34,7 @@ class BookTypeController extends Controller
 
     public function show(BookType $bookType): Response
     {
-        return Inertia::render('Master/Show', ['resource' => 'book-types', 'title' => 'Detail Jenis Buku', 'item' => $bookType->loadCount('books'), 'editUrl' => route('book-types.edit', $bookType), 'backUrl' => route('book-types.index')]);
+        return Inertia::render('Master/Show', ['resource' => 'book-types', 'title' => 'Detail Jenis Buku', 'item' => $bookType->loadCount('books'), 'books' => $bookType->books()->select(['id', 'jenis_buku_id', 'kode_buku', 'judul'])->latest('id')->limit(20)->get(), 'editUrl' => route('book-types.edit', $bookType), 'backUrl' => route('book-types.index')]);
     }
 
     public function edit(BookType $bookType): Response
@@ -52,7 +53,9 @@ class BookTypeController extends Controller
     {
         if ($bookType->books()->exists()) {
             return back()->with('error', 'Jenis buku tidak dapat dihapus karena masih digunakan oleh buku.');
-        } $bookType->delete();
+        }
+
+        $bookType->delete();
 
         return back()->with('success', 'Jenis buku berhasil dihapus.');
     }

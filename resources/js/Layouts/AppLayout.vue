@@ -13,7 +13,7 @@ const navItems = computed(() => {
     const common = [
         { label: 'Dashboard', href: '/dashboard', icon: 'grid' },
         { label: 'Cari Buku', href: '/buku', icon: 'book' },
-        { label: 'Peminjaman Saya', href: '/peminjaman-saya', icon: 'repeat' },
+        { label: 'Profil Saya', href: '/profil', icon: 'user' },
     ]
 
     if (user.value?.role !== 'admin') {
@@ -30,8 +30,6 @@ const navItems = computed(() => {
         { label: 'Buku dan Eksemplar', href: '/buku', icon: 'book' },
         { label: 'Inventaris', href: '/inventaris', icon: 'archive' },
         { label: 'Anggota', href: '/anggota', icon: 'users' },
-        { label: 'Peminjaman', href: '/peminjaman', icon: 'repeat' },
-        { label: 'Laporan', href: '/laporan', icon: 'chart' },
         { label: 'Profil Saya', href: '/profil', icon: 'user' },
     ]
 })

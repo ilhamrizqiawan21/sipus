@@ -24,6 +24,6 @@ class BookRequest extends FormRequest
     {
         $book = $this->route('book');
 
-        return ['kode_buku' => ['nullable', 'string', 'max:30', Rule::unique('books', 'kode_buku')->ignore($book)], 'judul' => ['required', 'string', 'max:255'], 'jenis_buku_id' => ['required', 'integer', 'exists:book_types,id'], 'penerbit_id' => ['nullable', 'integer', 'exists:publishers,id'], 'tahun_terbit' => ['nullable', 'integer', 'between:1000,2100'], 'deskripsi' => ['nullable', 'string'], 'authors' => ['nullable', 'array'], 'authors.*' => ['integer', 'exists:authors,id'], 'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048']];
+        return ['kode_buku' => ['nullable', 'string', 'max:30', Rule::unique('books', 'kode_buku')->ignore($book)], 'judul' => ['required', 'string', 'max:255'], 'jenis_buku_id' => ['required', 'integer', Rule::exists('book_types', 'id')->where(fn ($query) => $query->where('aktif', true))], 'penerbit_id' => ['nullable', 'integer', 'exists:publishers,id'], 'tahun_terbit' => ['nullable', 'integer', 'between:1000,2100'], 'deskripsi' => ['nullable', 'string'], 'authors' => ['nullable', 'array'], 'authors.*' => ['integer', 'exists:authors,id'], 'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048']];
     }
 }
